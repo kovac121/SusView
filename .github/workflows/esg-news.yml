@@ -1,0 +1,38 @@
+name: ESG News Fetcher
+
+on:
+  schedule:
+    # 每天早上8点和下午2点运行 (UTC时间 = 北京时间-8)
+    # 8:00 UTC = 16:00 北京时间
+    # 14:00 UTC = 22:00 北京时间
+    - cron: '0 8 * * *'
+    - cron: '0 14 * * *'
+  workflow_dispatch:  # 支持手动触发
+
+jobs:
+  fetch-news:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run ESG News Fetcher
+        env:
+          SENDKEY: ${{ secrets.SENDKEY }}
+        run: python esg_news_bot.py
+
+      - name: Upload news output
+        uses: actions/upload-artifact@v4
+        with:
+          name: news-output
+          path: news_output.md
