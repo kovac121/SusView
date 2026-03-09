@@ -144,7 +144,7 @@ def format_news_message(news_list):
 
 
 def format_wechat_html(news_list):
-    """生成适合微信的HTML格式"""
+    """生成适合微信的HTML格式 - 专业ESG风格，适配黑暗模式"""
     if not news_list:
         return ""
 
@@ -159,46 +159,232 @@ def format_wechat_html(news_list):
         'Carbon Pulse': 'Carbon Pulse'
     }
 
-    html = f"""
-<!DOCTYPE html>
+    html = f"""<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-    body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 100%; }}
-    .header {{ background: linear-gradient(135deg, #1a5f2a 0%, #2d8a4e 100%); color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }}
-    .header h1 {{ margin: 0; font-size: 20px; }}
-    .header .date {{ opacity: 0.9; font-size: 14px; margin-top: 5px; }}
-    .news-list {{ background: #f9f9f9; padding: 15px; }}
-    .news-item {{ background: white; border-radius: 8px; padding: 15px; margin-bottom: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.08); }}
+    :root {{
+        --primary: #90EE90;
+        --primary-dark: #228B22;
+        --primary-light: #98FB98;
+        --bg: #ffffff;
+        --bg-secondary: #f8f9fa;
+        --text: #1a1a1a;
+        --text-secondary: #666666;
+        --border: #e9ecef;
+        --card-bg: #ffffff;
+        --tag-bg: #e8f5e9;
+        --tag-text: #2e7d32;
+    }}
+
+    @media (prefers-color-scheme: dark) {{
+        :root {{
+            --bg: #1a1a1a;
+            --bg-secondary: #2d2d2d;
+            --text: #e8e8e8;
+            --text-secondary: #a0a0a0;
+            --border: #3d3d3d;
+            --card-bg: #252525;
+            --tag-bg: #1a3d1a;
+            --tag-text: #90EE90;
+        }}
+    }}
+
+    * {{ box-sizing: border-box; margin: 0; padding: 0; }}
+
+    body {{
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+        line-height: 1.6;
+        color: var(--text);
+        background: var(--bg);
+        max-width: 100%;
+        padding: 16px;
+    }}
+
+    .container {{
+        max-width: 600px;
+        margin: 0 auto;
+    }}
+
+    .header {{
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        color: #000;
+        padding: 24px 20px;
+        text-align: center;
+        border-radius: 12px 12px 0 0;
+    }}
+
+    @media (prefers-color-scheme: dark) {{
+        .header {{
+            background: linear-gradient(135deg, var(--primary-dark) 0%, #006400 100%);
+            color: var(--primary-light);
+        }}
+    }}
+
+    .header h1 {{
+        margin: 0;
+        font-size: 22px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+    }}
+
+    .header .meta {{
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 12px;
+        margin-top: 8px;
+        font-size: 14px;
+        opacity: 0.85;
+    }}
+
+    .count-badge {{
+        background: rgba(0,0,0,0.15);
+        padding: 2px 10px;
+        border-radius: 12px;
+        font-weight: 500;
+    }}
+
+    .news-list {{
+        background: var(--bg-secondary);
+        padding: 16px;
+    }}
+
+    .news-item {{
+        background: var(--card-bg);
+        border-radius: 10px;
+        padding: 16px;
+        margin-bottom: 12px;
+        border: 1px solid var(--border);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }}
+
+    .news-item:hover {{
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }}
+
     .news-item:last-child {{ margin-bottom: 0; }}
-    .news-source {{ display: inline-block; background: #e8f5e9; color: #2e7d32; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; margin-bottom: 8px; }}
-    .news-title {{ font-size: 15px; font-weight: 600; color: #1a1a1a; margin: 0 0 8px 0; line-height: 1.4; }}
-    .news-summary {{ font-size: 13px; color: #666; margin: 0 0 10px 0; line-height: 1.5; }}
-    .news-link {{ display: inline-block; color: #1976d2; text-decoration: none; font-size: 13px; }}
-    .news-link:after {{ content: ' →'; }}
-    .footer {{ background: #f5f5f5; padding: 15px; text-align: center; font-size: 12px; color: #999; border-radius: 0 0 8px 8px; }}
-    .count {{ background: #fff3e0; color: #e65100; padding: 3px 10px; border-radius: 12px; font-size: 12px; }}
+
+    .news-header {{
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }}
+
+    .news-source {{
+        display: inline-block;
+        background: var(--tag-bg);
+        color: var(--tag-text);
+        padding: 3px 10px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }}
+
+    .news-time {{
+        font-size: 12px;
+        color: var(--text-secondary);
+    }}
+
+    .news-title {{
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--text);
+        margin: 0 0 8px 0;
+        line-height: 1.4;
+    }}
+
+    .news-summary {{
+        font-size: 14px;
+        color: var(--text-secondary);
+        margin: 0 0 12px 0;
+        line-height: 1.5;
+    }}
+
+    .news-link {{
+        display: inline-flex;
+        align-items: center;
+        color: var(--primary-dark);
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 500;
+    }}
+
+    .news-link:hover {{
+        text-decoration: underline;
+    }}
+
+    .news-link:after {{
+        content: '→';
+        margin-left: 4px;
+        transition: transform 0.2s;
+    }}
+
+    .news-link:hover:after {{
+        transform: translateX(3px);
+    }}
+
+    @media (prefers-color-scheme: dark) {{
+        .news-link {{
+            color: var(--primary);
+        }}
+    }}
+
+    .footer {{
+        background: var(--bg-secondary);
+        padding: 16px;
+        text-align: center;
+        font-size: 12px;
+        color: var(--text-secondary);
+        border-radius: 0 0 12px 12px;
+        border-top: 1px solid var(--border);
+    }}
+
+    .footer-sources {{
+        margin-bottom: 8px;
+        font-weight: 500;
+    }}
+
+    .divider {{
+        width: 40px;
+        height: 2px;
+        background: var(--primary);
+        margin: 12px auto;
+        border-radius: 1px;
+    }}
 </style>
 </head>
 <body>
-    <div class="header">
-        <h1>🌍 欧洲ESG新闻</h1>
-        <div class="date">{date_str} · 今日{len(news_list[:8])}条</div>
-    </div>
-    <div class="news-list">
+    <div class="container">
+        <div class="header">
+            <h1>🌍 欧洲ESG新闻</h1>
+            <div class="meta">
+                <span>{date_str}</span>
+                <span class="count-badge">今日 {len(news_list[:8])} 条</span>
+            </div>
+        </div>
+        <div class="news-list">
 """
 
     for news in news_list[:8]:
         source = source_map.get(news['source'], news['source'])
         title = news['title']
-        summary = news.get('summary', '')[:100]
+        summary = news.get('summary', '')[:120]
         link = news['link']
+        published = news.get('published', '')[:16]
 
         html += f"""
         <div class="news-item">
-            <span class="news-source">{source}</span>
+            <div class="news-header">
+                <span class="news-source">{source}</span>
+                <span class="news-time">{published}</span>
+            </div>
             <h3 class="news-title">{title}</h3>
             <p class="news-summary">{summary}</p>
             <a class="news-link" href="{link}">阅读原文</a>
@@ -206,10 +392,12 @@ def format_wechat_html(news_list):
 """
 
     html += """
-    </div>
-    <div class="footer">
-        来源：欧盟委员会、欧洲环境署、德勤、路透、Carbon Pulse<br>
-        SusView · 自动抓取整理
+        </div>
+        <div class="footer">
+            <div class="footer-sources">来源：欧盟委员会 · 欧洲环境署 · 德勤 · 路透 · Carbon Pulse</div>
+            <div class="divider"></div>
+            SusView · 自动抓取整理
+        </div>
     </div>
 </body>
 </html>
