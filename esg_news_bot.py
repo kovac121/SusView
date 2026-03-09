@@ -19,8 +19,8 @@ SENDKEY = os.environ.get('SENDKEY', '')
 # RSS新闻源
 RSS_SOURCES = [
     {
-        'name': '欧盟委员会',
-        'url': 'https://ec.europa.eu/rss/rankings/new_en.rss',
+        'name': '欧盟委员会气候',
+        'url': 'https://climate.ec.europa.eu/rss_en',
         'keywords': ['environment', 'climate', 'energy', 'sustainability', 'green', 'carbon', 'emissions', 'ESG']
     },
     {
@@ -34,14 +34,14 @@ RSS_SOURCES = [
         'keywords': ['ESG', 'sustainability', 'climate', 'green', 'carbon', 'net zero']
     },
     {
-        'name': '毕马威ESG',
-        'url': 'https://home.kpmg.com/xx/en/home.rss',
-        'keywords': ['ESG', 'sustainability', 'climate', 'carbon', 'net zero', 'green']
+        'name': 'Reuters ESG',
+        'url': 'https://www.reutersagency.com/feed/?best-topics=esg&post_type=best',
+        'keywords': ['ESG', 'sustainability', 'climate', 'carbon', 'emissions', 'green']
     },
     {
-        'name': 'Reuters ESG',
-        'url': 'https://www.reutersagency.com/feed/?best-regions=europe&post_type=best',
-        'keywords': ['ESG', 'sustainability', 'climate', 'carbon', 'emissions', 'green']
+        'name': 'Carbon Pulse',
+        'url': 'https://carbon-pulse.com/feed/',
+        'keywords': ['carbon', 'ETS', 'emissions', 'trading', 'allowance']
     },
 ]
 
@@ -143,14 +143,21 @@ def format_news_message(news_list):
     return message
 
 def send_wechat(message):
-    """发送到Server酱微信推送"""
+    """发送到Server酱微信推送 (支持旧版SCKEY和新版SCTKEY)"""
     if not SENDKEY:
         print("未配置SENDKEY，跳过微信推送")
         print("消息内容:")
         print(message)
         return False
 
-    url = f"https://sc.ftqq.com/{SENDKEY}.send"
+    # 判断是旧版(SCKEY)还是新版(SCTKEY)
+    if SENDKEY.startswith('SCT'):
+        # ServerChan Turbo 新版
+        url = f"https://sctapi.ftqq.com/{SENDKEY}.send"
+    else:
+        # 旧版 Server酱
+        url = f"https://sc.ftqq.com/{SENDKEY}.send"
+
     data = {
         'text': '欧洲ESG新闻推送',
         'desp': message
@@ -159,7 +166,8 @@ def send_wechat(message):
     try:
         response = requests.post(url, data=data)
         result = response.json()
-        if result.get('errno') == 0:
+        print(f"Server酱响应: {result}")
+        if result.get('code') == 0 or result.get('errno') == 0:
             print("微信推送成功!")
             return True
         else:
