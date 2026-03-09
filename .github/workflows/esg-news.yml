@@ -7,7 +7,7 @@ on:
     # 14:00 UTC = 22:00 北京时间
     - cron: '0 8 * * *'
     - cron: '0 14 * * *'
-  workflow_dispatch:  # 支持手动触发
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -23,18 +23,19 @@ jobs:
           ref: main
           fetch-depth: 0
 
+      - name: Create news directory
+        run: mkdir -p news
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
+        run: pip install -r requirements.txt
 
       - name: Run ESG News Fetcher
-        run: |
-          python esg_news_bot.py 2>&1
+        run: python esg_news_bot.py
 
       - name: Commit news
         if: success()
