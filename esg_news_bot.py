@@ -142,40 +142,25 @@ def format_news_message(news_list):
     message += "---来自SusView自动推送"
     return message
 
-def send_wechat(message):
-    """发送到Server酱微信推送 (支持旧版SCKEY和新版SCTKEY)"""
-    if not SENDKEY:
-        print("未配置SENDKEY，跳过微信推送")
-        print("消息内容:")
-        print(message)
-        return False
+def save_to_github(message):
+    """保存新闻到GitHub兼容格式 (供GitHub Actions自动提交)"""
+    # 输出为Markdown格式，方便查看
+    print("\n" + "="*50)
+    print("📰 今日ESG新闻摘要")
+    print("="*50)
+    print(message)
+    print("="*50)
 
-    # 判断是旧版(SCKEY)还是新版(SCTKEY)
-    if SENDKEY.startswith('SCT'):
-        # ServerChan Turbo 新版
-        url = f"https://sctapi.ftqq.com/{SENDKEY}.send"
-    else:
-        # 旧版 Server酱
-        url = f"https://sc.ftqq.com/{SENDKEY}.send"
+    # 保存到文件 (GitHub Actions会自动提交这个文件)
+    with open('news/latest.md', 'w', encoding='utf-8') as f:
+        f.write(f"# 欧洲ESG新闻\n\n")
+        f.write(f"更新时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+        f.write(message)
+        f.write("\n\n---\n自动抓取自 SusView\n")
 
-    data = {
-        'text': '欧洲ESG新闻推送',
-        'desp': message
-    }
+    print("\n✅ 新闻已保存到 news/latest.md")
 
-    try:
-        response = requests.post(url, data=data)
-        result = response.json()
-        print(f"Server酱响应: {result}")
-        if result.get('code') == 0 or result.get('errno') == 0:
-            print("微信推送成功!")
-            return True
-        else:
-            print(f"微信推送失败: {result}")
-            return False
-    except Exception as e:
-        print(f"微信推送异常: {e}")
-        return False
+    return True
 
 def main():
     print(f"=== 开始抓取ESG新闻 {datetime.now().strftime('%Y-%m-%d %H:%M')} ===")
@@ -187,12 +172,8 @@ def main():
     # 格式化消息
     message = format_news_message(news_list)
 
-    # 发送到微信
-    send_wechat(message)
-
-    # 保存到文件（方便查看）
-    with open('news_output.md', 'w', encoding='utf-8') as f:
-        f.write(message)
+    # 保存到文件（GitHub会自动提交）
+    save_to_github(message)
 
     print("=== 完成 ===")
 

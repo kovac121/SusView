@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "Bash(gh auth status)",
+      "Bash(curl -s https://api.github.com/repos/kovac121/SusView)",
+      "Bash(gh workflow run esg-news.yml -f)"
+    ]
+  }
+}
