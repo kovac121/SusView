@@ -163,7 +163,12 @@ def save_to_github(message):
     return True
 
 def main():
+    import os
     print(f"=== 开始抓取ESG新闻 {datetime.now().strftime('%Y-%m-%d %H:%M')} ===")
+
+    # 确保news目录存在
+    os.makedirs('news', exist_ok=True)
+    print("✅ news目录已准备")
 
     # 抓取新闻
     news_list = fetch_all_news()
