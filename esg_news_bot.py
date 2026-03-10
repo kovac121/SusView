@@ -12,9 +12,15 @@ from datetime import datetime
 from dateutil import parser as date_parser
 import feedparser
 
-# ===== 配置 =====
-# Server酱 SCKEY (免费注册: https://sc.ftqq.com/)
-SENDKEY = os.environ.get('SENDKEY', '')
+# AI 摘要功能
+try:
+    from ai_providers import get_ai_summary
+    AI_ENABLED = True
+except ImportError:
+    AI_ENABLED = False
+    print("⚠️ AI功能未启用 (ai_providers.py 未找到)")
+
+
 
 # RSS新闻源
 RSS_SOURCES = [
@@ -143,7 +149,7 @@ def format_news_message(news_list):
     return message
 
 
-def format_wechat_html(news_list):
+def format_wechat_html(news_list, ai_summary=None):
     """生成适合微信的HTML格式 - 专业ESG风格，适配黑暗模式"""
     if not news_list:
         return ""
@@ -158,6 +164,21 @@ def format_wechat_html(news_list):
         'Reuters ESG': '路透',
         'Carbon Pulse': 'Carbon Pulse'
     }
+
+    # AI摘要区域
+    ai_section = ""
+    if ai_summary:
+        # 处理AI摘要中的换行
+        ai_summary_html = ai_summary.replace('\n', '<br>')
+        ai_section = f"""
+        <div class="ai-summary">
+            <div class="ai-header">
+                <span class="ai-icon">🤖</span>
+                <span>AI要点分析</span>
+            </div>
+            <div class="ai-content">{ai_summary_html}</div>
+        </div>
+        """
 
     html = f"""<!DOCTYPE html>
 <html>
@@ -245,6 +266,43 @@ def format_wechat_html(news_list):
         padding: 2px 10px;
         border-radius: 12px;
         font-weight: 500;
+    }}
+
+    /* AI摘要样式 */
+    .ai-summary {{
+        background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+        border-bottom: 1px solid var(--border);
+        padding: 16px;
+    }}
+
+    @media (prefers-color-scheme: dark) {{
+        .ai-summary {{
+            background: linear-gradient(135deg, #1e3a5f 0%, #0c1929 100%);
+        }}
+    }}
+
+    .ai-header {{
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #0369a1;
+        margin-bottom: 10px;
+    }}
+
+    @media (prefers-color-scheme: dark) {{
+        .ai-header {{
+            color: #7dd3fc;
+        }}
+    }}
+
+    .ai-icon {{ font-size: 16px; }}
+
+    .ai-content {{
+        font-size: 14px;
+        color: var(--text);
+        line-height: 1.7;
     }}
 
     .news-list {{
@@ -369,6 +427,7 @@ def format_wechat_html(news_list):
                 <span class="count-badge">今日 {len(news_list[:8])} 条</span>
             </div>
         </div>
+        {ai_section}
         <div class="news-list">
 """
 
@@ -440,9 +499,19 @@ def main():
     news_list = fetch_all_news()
     print(f"共抓取到 {len(news_list)} 条ESG相关新闻")
 
+    # 获取AI摘要 (如果启用)
+    ai_summary = None
+    if AI_ENABLED:
+        print("🤖 正在生成AI摘要...")
+        ai_summary = get_ai_summary(news_list)
+        if ai_summary:
+            print("✅ AI摘要生成成功")
+        else:
+            print("⚠️ AI摘要生成失败，将跳过")
+
     # 格式化消息
     message = format_news_message(news_list)
-    html_content = format_wechat_html(news_list)
+    html_content = format_wechat_html(news_list, ai_summary)
 
     # 保存到文件（GitHub会自动提交）
     save_to_github(message, html_content)

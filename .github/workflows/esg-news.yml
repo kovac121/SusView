@@ -35,6 +35,8 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Run ESG News Fetcher
+        env:
+          LONGCAT_API_KEY: ${{ secrets.LONGCAT_API_KEY }}
         run: python esg_news_bot.py
 
       - name: Commit news
