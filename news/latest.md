@@ -1,36 +1,36 @@
 # 欧洲ESG新闻
 
-更新时间: 2026-03-10 10:07:38
+更新时间: 2026-03-10 17:08:12
 
 📰 欧洲ESG新闻 (2026-03-10)
 
-1. Tribe formally pulls California-registered forest carbon offset project destroyed by wildfire
+1. Almost half of CDR supply already reserved up to 2030, survey data shows
    来源: Carbon Pulse
-   链接: https://carbon-pulse.com/491113/
+   链接: https://carbon-pulse.com/491457/
 
-2. Agricultural waste fuels green steel breakthrough for Australia-India partnership
+2. CORSIA futures hit 15-month low as EEU issuances breach 32 mln
    来源: Carbon Pulse
-   链接: https://carbon-pulse.com/491104/
+   链接: https://carbon-pulse.com/491375/
 
-3. LATAM Roundup: A packed carbon markets agenda for 2026
+3. Nigeria well-placed to phase in a carbon tax, and eventually an emissions trading scheme -report
    来源: Carbon Pulse
-   链接: https://carbon-pulse.com/491084/
+   链接: https://carbon-pulse.com/491342/
 
-4. Landmark ag-based renewable natural gas project to generate ACCUs
+4. Select European corporate buyers favouring NbS over engineered removals, study finds
    来源: Carbon Pulse
-   链接: https://carbon-pulse.com/491079/
+   链接: https://carbon-pulse.com/491353/
 
-5. Internal carbon pricing targets Scope 2 emissions inefficiency but misses Scopes 1 and 3 -Japanese study
+5. EU leaders to call for ETS reform proposals by July in push to tame power prices
    来源: Carbon Pulse
-   链接: https://carbon-pulse.com/491069/
+   链接: https://carbon-pulse.com/491396/
 
-6. Australia’s New South Wales opens A$80 mln decarbonisation grant funds
+6. Nigeria signs LoA for international sale of 5.2 mln cookstove carbon credits
    来源: Carbon Pulse
-   链接: https://carbon-pulse.com/491056/
+   链接: https://carbon-pulse.com/491341/
 
-7. INTERVIEW: Engineered carbon removals to meet a tipping point in 2026, says standard chief
+7. EU announces €200 mln ETS-backed funding for innovative nuclear technologies
    来源: Carbon Pulse
-   链接: https://carbon-pulse.com/491027/
+   链接: https://carbon-pulse.com/491310/
 
 ---来自SusView自动推送
 
