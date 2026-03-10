@@ -1,93 +1,329 @@
-
 <!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 100%; }
-    .header { background: linear-gradient(135deg, #1a5f2a 0%, #2d8a4e 100%); color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
-    .header h1 { margin: 0; font-size: 20px; }
-    .header .date { opacity: 0.9; font-size: 14px; margin-top: 5px; }
-    .news-list { background: #f9f9f9; padding: 15px; }
-    .news-item { background: white; border-radius: 8px; padding: 15px; margin-bottom: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.08); }
+    :root {
+        --primary: #90EE90;
+        --primary-dark: #228B22;
+        --primary-light: #98FB98;
+        --bg: #ffffff;
+        --bg-secondary: #f8f9fa;
+        --text: #1a1a1a;
+        --text-secondary: #666666;
+        --border: #e9ecef;
+        --card-bg: #ffffff;
+        --tag-bg: #e8f5e9;
+        --tag-text: #2e7d32;
+    }
+
+    @media (prefers-color-scheme: dark) {
+        :root {
+            --bg: #1a1a1a;
+            --bg-secondary: #2d2d2d;
+            --text: #e8e8e8;
+            --text-secondary: #a0a0a0;
+            --border: #3d3d3d;
+            --card-bg: #252525;
+            --tag-bg: #1a3d1a;
+            --tag-text: #90EE90;
+        }
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+        line-height: 1.6;
+        color: var(--text);
+        background: var(--bg);
+        max-width: 100%;
+        padding: 16px;
+    }
+
+    .container {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    .header {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        color: #000;
+        padding: 24px 20px;
+        text-align: center;
+        border-radius: 12px 12px 0 0;
+    }
+
+    @media (prefers-color-scheme: dark) {
+        .header {
+            background: linear-gradient(135deg, var(--primary-dark) 0%, #006400 100%);
+            color: var(--primary-light);
+        }
+    }
+
+    .header h1 {
+        margin: 0;
+        font-size: 22px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+    }
+
+    .header .meta {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 12px;
+        margin-top: 8px;
+        font-size: 14px;
+        opacity: 0.85;
+    }
+
+    .count-badge {
+        background: rgba(0,0,0,0.15);
+        padding: 2px 10px;
+        border-radius: 12px;
+        font-weight: 500;
+    }
+
+    /* AI摘要样式 */
+    .ai-summary {
+        background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+        border-bottom: 1px solid var(--border);
+        padding: 16px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+        .ai-summary {
+            background: linear-gradient(135deg, #1e3a5f 0%, #0c1929 100%);
+        }
+    }
+
+    .ai-header {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #0369a1;
+        margin-bottom: 10px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+        .ai-header {
+            color: #7dd3fc;
+        }
+    }
+
+    .ai-icon { font-size: 16px; }
+
+    .ai-content {
+        font-size: 14px;
+        color: var(--text);
+        line-height: 1.7;
+    }
+
+    .news-list {
+        background: var(--bg-secondary);
+        padding: 16px;
+    }
+
+    .news-item {
+        background: var(--card-bg);
+        border-radius: 10px;
+        padding: 16px;
+        margin-bottom: 12px;
+        border: 1px solid var(--border);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .news-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+
     .news-item:last-child { margin-bottom: 0; }
-    .news-source { display: inline-block; background: #e8f5e9; color: #2e7d32; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; margin-bottom: 8px; }
-    .news-title { font-size: 15px; font-weight: 600; color: #1a1a1a; margin: 0 0 8px 0; line-height: 1.4; }
-    .news-summary { font-size: 13px; color: #666; margin: 0 0 10px 0; line-height: 1.5; }
-    .news-link { display: inline-block; color: #1976d2; text-decoration: none; font-size: 13px; }
-    .news-link:after { content: ' →'; }
-    .footer { background: #f5f5f5; padding: 15px; text-align: center; font-size: 12px; color: #999; border-radius: 0 0 8px 8px; }
-    .count { background: #fff3e0; color: #e65100; padding: 3px 10px; border-radius: 12px; font-size: 12px; }
+
+    .news-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
+    .news-source {
+        display: inline-block;
+        background: var(--tag-bg);
+        color: var(--tag-text);
+        padding: 3px 10px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    .news-time {
+        font-size: 12px;
+        color: var(--text-secondary);
+    }
+
+    .news-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--text);
+        margin: 0 0 8px 0;
+        line-height: 1.4;
+    }
+
+    .news-summary {
+        font-size: 14px;
+        color: var(--text-secondary);
+        margin: 0 0 12px 0;
+        line-height: 1.5;
+    }
+
+    .news-link {
+        display: inline-flex;
+        align-items: center;
+        color: var(--primary-dark);
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 500;
+    }
+
+    .news-link:hover {
+        text-decoration: underline;
+    }
+
+    .news-link:after {
+        content: '→';
+        margin-left: 4px;
+        transition: transform 0.2s;
+    }
+
+    .news-link:hover:after {
+        transform: translateX(3px);
+    }
+
+    @media (prefers-color-scheme: dark) {
+        .news-link {
+            color: var(--primary);
+        }
+    }
+
+    .footer {
+        background: var(--bg-secondary);
+        padding: 16px;
+        text-align: center;
+        font-size: 12px;
+        color: var(--text-secondary);
+        border-radius: 0 0 12px 12px;
+        border-top: 1px solid var(--border);
+    }
+
+    .footer-sources {
+        margin-bottom: 8px;
+        font-weight: 500;
+    }
+
+    .divider {
+        width: 40px;
+        height: 2px;
+        background: var(--primary);
+        margin: 12px auto;
+        border-radius: 1px;
+    }
 </style>
 </head>
 <body>
-    <div class="header">
-        <h1>🌍 欧洲ESG新闻</h1>
-        <div class="date">2026年03月09日 · 今日8条</div>
-    </div>
-    <div class="news-list">
+    <div class="container">
+        <div class="header">
+            <h1>🌍 欧洲ESG新闻</h1>
+            <div class="meta">
+                <span>2026年03月10日</span>
+                <span class="count-badge">今日 7 条</span>
+            </div>
+        </div>
+        
+        <div class="news-list">
 
         <div class="news-item">
-            <span class="news-source">Carbon Pulse</span>
-            <h3 class="news-title">CDR MONTHLY DATA: Investment falls but retirements edge up with market showing signs of maturity</h3>
-            <p class="news-summary">The engineered carbon removals (CDR) market saw a softening in investment and fewer forward purchase</p>
-            <a class="news-link" href="https://carbon-pulse.com/490509/">阅读原文</a>
+            <div class="news-header">
+                <span class="news-source">Carbon Pulse</span>
+                <span class="news-time">2026-03-10 04:23</span>
+            </div>
+            <h3 class="news-title">Agricultural waste fuels green steel breakthrough for Australia-India partnership</h3>
+            <p class="news-summary">Researchers have successfully used agricultural waste to produce a biogas for use in iron ore reduction in India, taking</p>
+            <a class="news-link" href="https://carbon-pulse.com/491104/">阅读原文</a>
         </div>
 
         <div class="news-item">
-            <span class="news-source">Carbon Pulse</span>
-            <h3 class="news-title">Paris Agreement reporting framework could help align biodiversity, climate plans -study</h3>
-            <p class="news-summary">A reporting framework established under the Paris Agreement provides an opportunity to improve coord</p>
-            <a class="news-link" href="https://carbon-pulse.com/490851/">阅读原文</a>
+            <div class="news-header">
+                <span class="news-source">Carbon Pulse</span>
+                <span class="news-time">2026-03-10 03:18</span>
+            </div>
+            <h3 class="news-title">LATAM Roundup: A packed carbon markets agenda for 2026</h3>
+            <p class="news-summary">The year 2026 marks the launch of new carbon policies and decarbonisation markets in Latin America, as per reporting las</p>
+            <a class="news-link" href="https://carbon-pulse.com/491084/">阅读原文</a>
         </div>
 
         <div class="news-item">
-            <span class="news-source">Carbon Pulse</span>
-            <h3 class="news-title">California climate disclosure rule could reorder corporate carbon rankings, redirect capital -study</h3>
-            <p class="news-summary">Mandatory disclosure of full corporate emissions under a California climate law could significantly </p>
-            <a class="news-link" href="https://carbon-pulse.com/490853/">阅读原文</a>
+            <div class="news-header">
+                <span class="news-source">Carbon Pulse</span>
+                <span class="news-time">2026-03-10 03:07</span>
+            </div>
+            <h3 class="news-title">Landmark ag-based renewable natural gas project to generate ACCUs</h3>
+            <p class="news-summary">Australia's first agriculture-based renewable natural gas (RNG) project is set to earn carbon credits when operations co</p>
+            <a class="news-link" href="https://carbon-pulse.com/491079/">阅读原文</a>
         </div>
 
         <div class="news-item">
-            <span class="news-source">Carbon Pulse</span>
-            <h3 class="news-title">Success of EU’s ETS2 hinges on complementary policies to ensure social fairness -EEA</h3>
-            <p class="news-summary">The EU's incoming Emissions Trading System for road transport and heating (ETS2) will drive bigger e</p>
-            <a class="news-link" href="https://carbon-pulse.com/490815/">阅读原文</a>
+            <div class="news-header">
+                <span class="news-source">Carbon Pulse</span>
+                <span class="news-time">2026-03-10 00:12</span>
+            </div>
+            <h3 class="news-title">Internal carbon pricing targets Scope 2 emissions inefficiency but misses Scopes 1 and 3 -Japanese study</h3>
+            <p class="news-summary">Japanese companies’ use of internal carbon pricing has had only a limited impact on their overall carbon efficiency, imp</p>
+            <a class="news-link" href="https://carbon-pulse.com/491069/">阅读原文</a>
         </div>
 
         <div class="news-item">
-            <span class="news-source">Carbon Pulse</span>
-            <h3 class="news-title">France seeks CBAM derogation for its overseas territories</h3>
-            <p class="news-summary">France has called for its overseas territories to be exempted from the EU’s Carbon Border Adjustment</p>
-            <a class="news-link" href="https://carbon-pulse.com/490843/">阅读原文</a>
+            <div class="news-header">
+                <span class="news-source">Carbon Pulse</span>
+                <span class="news-time">2026-03-10 00:03</span>
+            </div>
+            <h3 class="news-title">Australia’s New South Wales opens A$80 mln decarbonisation grant funds</h3>
+            <p class="news-summary">The New South Wales state government is offering A$80 million ($56 mln) in fast-tracked grant funding to reduce industri</p>
+            <a class="news-link" href="https://carbon-pulse.com/491056/">阅读原文</a>
         </div>
 
         <div class="news-item">
-            <span class="news-source">Carbon Pulse</span>
-            <h3 class="news-title">Carbon registry updates Article 6.2 procedures, methodologies as it submits CORSIA application</h3>
-            <p class="news-summary">A carbon crediting registry has released updated Article 6.2 procedures for projects seeking eligibi</p>
-            <a class="news-link" href="https://carbon-pulse.com/490844/">阅读原文</a>
+            <div class="news-header">
+                <span class="news-source">Carbon Pulse</span>
+                <span class="news-time">2026-03-09 23:18</span>
+            </div>
+            <h3 class="news-title">INTERVIEW: Engineered carbon removals to meet a tipping point in 2026, says standard chief</h3>
+            <p class="news-summary">An increase in high-quality and large-scale carbon dioxide removal (CDR) credit supply, growing buyer participation – ev</p>
+            <a class="news-link" href="https://carbon-pulse.com/491027/">阅读原文</a>
         </div>
 
         <div class="news-item">
-            <span class="news-source">Carbon Pulse</span>
-            <h3 class="news-title">Swiss say no to climate and nature fund</h3>
-            <p class="news-summary">Only 30% of Swiss voted in favour of a national climate and nature fund over the weekend, with the m</p>
-            <a class="news-link" href="https://carbon-pulse.com/490846/">阅读原文</a>
+            <div class="news-header">
+                <span class="news-source">Carbon Pulse</span>
+                <span class="news-time">2026-03-09 20:27</span>
+            </div>
+            <h3 class="news-title">Super pollutants must be mitigated as a part of CDR efforts for consistent climate impacts -report</h3>
+            <p class="news-summary">Corporations can achieve immediate and long-term climate benefits by strategically pairing super pollutant abatement wit</p>
+            <a class="news-link" href="https://carbon-pulse.com/491017/">阅读原文</a>
         </div>
 
-        <div class="news-item">
-            <span class="news-source">Carbon Pulse</span>
-            <h3 class="news-title">FEATURE: Singapore’s SAF levy unlikely to impact demand for CORSIA credits</h3>
-            <p class="news-summary">Singapore’s upcoming levy on airline tickets to fund sustainable aviation fuel (SAF) purchases is se</p>
-            <a class="news-link" href="https://carbon-pulse.com/490833/">阅读原文</a>
         </div>
-
-    </div>
-    <div class="footer">
-        来源：欧盟委员会、欧洲环境署、德勤、路透、Carbon Pulse<br>
-        SusView · 自动抓取整理
+        <div class="footer">
+            <div class="footer-sources">来源：欧盟委员会 · 欧洲环境署 · 德勤 · 路透 · Carbon Pulse</div>
+            <div class="divider"></div>
+            SusView · 自动抓取整理
+        </div>
     </div>
 </body>
 </html>

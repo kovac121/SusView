@@ -1,40 +1,36 @@
 # 欧洲ESG新闻
 
-更新时间: 2026-03-09 17:10:49
+更新时间: 2026-03-10 05:58:34
 
-📰 欧洲ESG新闻 (2026-03-09)
+📰 欧洲ESG新闻 (2026-03-10)
 
-1. CDR MONTHLY DATA: Investment falls but retirements edge up with market showing signs of maturity
+1. Agricultural waste fuels green steel breakthrough for Australia-India partnership
    来源: Carbon Pulse
-   链接: https://carbon-pulse.com/490509/
+   链接: https://carbon-pulse.com/491104/
 
-2. Paris Agreement reporting framework could help align biodiversity, climate plans -study
+2. LATAM Roundup: A packed carbon markets agenda for 2026
    来源: Carbon Pulse
-   链接: https://carbon-pulse.com/490851/
+   链接: https://carbon-pulse.com/491084/
 
-3. California climate disclosure rule could reorder corporate carbon rankings, redirect capital -study
+3. Landmark ag-based renewable natural gas project to generate ACCUs
    来源: Carbon Pulse
-   链接: https://carbon-pulse.com/490853/
+   链接: https://carbon-pulse.com/491079/
 
-4. Success of EU’s ETS2 hinges on complementary policies to ensure social fairness -EEA
+4. Internal carbon pricing targets Scope 2 emissions inefficiency but misses Scopes 1 and 3 -Japanese study
    来源: Carbon Pulse
-   链接: https://carbon-pulse.com/490815/
+   链接: https://carbon-pulse.com/491069/
 
-5. France seeks CBAM derogation for its overseas territories
+5. Australia’s New South Wales opens A$80 mln decarbonisation grant funds
    来源: Carbon Pulse
-   链接: https://carbon-pulse.com/490843/
+   链接: https://carbon-pulse.com/491056/
 
-6. Carbon registry updates Article 6.2 procedures, methodologies as it submits CORSIA application
+6. INTERVIEW: Engineered carbon removals to meet a tipping point in 2026, says standard chief
    来源: Carbon Pulse
-   链接: https://carbon-pulse.com/490844/
+   链接: https://carbon-pulse.com/491027/
 
-7. Swiss say no to climate and nature fund
+7. Super pollutants must be mitigated as a part of CDR efforts for consistent climate impacts -report
    来源: Carbon Pulse
-   链接: https://carbon-pulse.com/490846/
-
-8. FEATURE: Singapore’s SAF levy unlikely to impact demand for CORSIA credits
-   来源: Carbon Pulse
-   链接: https://carbon-pulse.com/490833/
+   链接: https://carbon-pulse.com/491017/
 
 ---来自SusView自动推送
 
