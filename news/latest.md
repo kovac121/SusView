@@ -1,40 +1,36 @@
 # 欧洲ESG新闻
 
-更新时间: 2026-03-09 17:10:49
+更新时间: 2026-03-10 17:08:12
 
-📰 欧洲ESG新闻 (2026-03-09)
+📰 欧洲ESG新闻 (2026-03-10)
 
-1. CDR MONTHLY DATA: Investment falls but retirements edge up with market showing signs of maturity
+1. Almost half of CDR supply already reserved up to 2030, survey data shows
    来源: Carbon Pulse
-   链接: https://carbon-pulse.com/490509/
+   链接: https://carbon-pulse.com/491457/
 
-2. Paris Agreement reporting framework could help align biodiversity, climate plans -study
+2. CORSIA futures hit 15-month low as EEU issuances breach 32 mln
    来源: Carbon Pulse
-   链接: https://carbon-pulse.com/490851/
+   链接: https://carbon-pulse.com/491375/
 
-3. California climate disclosure rule could reorder corporate carbon rankings, redirect capital -study
+3. Nigeria well-placed to phase in a carbon tax, and eventually an emissions trading scheme -report
    来源: Carbon Pulse
-   链接: https://carbon-pulse.com/490853/
+   链接: https://carbon-pulse.com/491342/
 
-4. Success of EU’s ETS2 hinges on complementary policies to ensure social fairness -EEA
+4. Select European corporate buyers favouring NbS over engineered removals, study finds
    来源: Carbon Pulse
-   链接: https://carbon-pulse.com/490815/
+   链接: https://carbon-pulse.com/491353/
 
-5. France seeks CBAM derogation for its overseas territories
+5. EU leaders to call for ETS reform proposals by July in push to tame power prices
    来源: Carbon Pulse
-   链接: https://carbon-pulse.com/490843/
+   链接: https://carbon-pulse.com/491396/
 
-6. Carbon registry updates Article 6.2 procedures, methodologies as it submits CORSIA application
+6. Nigeria signs LoA for international sale of 5.2 mln cookstove carbon credits
    来源: Carbon Pulse
-   链接: https://carbon-pulse.com/490844/
+   链接: https://carbon-pulse.com/491341/
 
-7. Swiss say no to climate and nature fund
+7. EU announces €200 mln ETS-backed funding for innovative nuclear technologies
    来源: Carbon Pulse
-   链接: https://carbon-pulse.com/490846/
-
-8. FEATURE: Singapore’s SAF levy unlikely to impact demand for CORSIA credits
-   来源: Carbon Pulse
-   链接: https://carbon-pulse.com/490833/
+   链接: https://carbon-pulse.com/491310/
 
 ---来自SusView自动推送
 
