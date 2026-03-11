@@ -5,29 +5,31 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
     :root {
-        --primary: #90EE90;
-        --primary-dark: #228B22;
-        --primary-light: #98FB98;
+        --primary: #22c55e;
+        --primary-dark: #15803d;
+        --primary-bg: #ecfdf5;
         --bg: #ffffff;
         --bg-secondary: #f8f9fa;
         --text: #1a1a1a;
         --text-secondary: #666666;
         --border: #e9ecef;
         --card-bg: #ffffff;
-        --tag-bg: #e8f5e9;
-        --tag-text: #2e7d32;
+        --tag-bg: #ecfdf5;
+        --tag-text: #047857;
     }
 
     @media (prefers-color-scheme: dark) {
         :root {
-            --bg: #1a1a1a;
-            --bg-secondary: #2d2d2d;
+            --primary: #4ade80;
+            --primary-dark: #22c55e;
+            --bg: #0a0a0a;
+            --bg-secondary: #171717;
             --text: #e8e8e8;
             --text-secondary: #a0a0a0;
-            --border: #3d3d3d;
-            --card-bg: #252525;
-            --tag-bg: #1a3d1a;
-            --tag-text: #90EE90;
+            --border: #262626;
+            --card-bg: #1a1a1a;
+            --tag-bg: #14532d;
+            --tag-text: #86efac;
         }
     }
 
@@ -48,25 +50,26 @@
     }
 
     .header {
-        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-        color: #000;
-        padding: 24px 20px;
+        background: var(--primary);
+        color: #14532d;
+        padding: 20px;
         text-align: center;
-        border-radius: 12px 12px 0 0;
+        border-radius: 8px 8px 0 0;
     }
 
     @media (prefers-color-scheme: dark) {
         .header {
-            background: linear-gradient(135deg, var(--primary-dark) 0%, #006400 100%);
-            color: var(--primary-light);
+            background: var(--primary-dark);
+            color: #ffffff;
+            font-weight: 700;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
         }
     }
 
     .header h1 {
         margin: 0;
-        font-size: 22px;
-        font-weight: 700;
-        letter-spacing: 0.5px;
+        font-size: 20px;
+        font-weight: 600;
     }
 
     .header .meta {
@@ -86,36 +89,28 @@
         font-weight: 500;
     }
 
-    /* AI摘要样式 */
     .ai-summary {
-        background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+        background: var(--primary-bg);
         border-bottom: 1px solid var(--border);
-        padding: 16px;
+        padding: 12px 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 13px;
+        color: var(--tag-text);
     }
 
     @media (prefers-color-scheme: dark) {
         .ai-summary {
-            background: linear-gradient(135deg, #1e3a5f 0%, #0c1929 100%);
+            background: #0f2a1d;
+            color: #a5d6a7;
         }
     }
 
-    .ai-header {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 13px;
-        font-weight: 600;
-        color: #0369a1;
-        margin-bottom: 10px;
+    .ai-model {
+        font-size: 12px;
+        opacity: 0.7;
     }
-
-    @media (prefers-color-scheme: dark) {
-        .ai-header {
-            color: #7dd3fc;
-        }
-    }
-
-    .ai-icon { font-size: 16px; }
 
     .ai-content {
         font-size: 14px;
@@ -183,6 +178,32 @@
         line-height: 1.5;
     }
 
+    .news-original-title {
+        font-size: 12px;
+        color: var(--text-secondary);
+        font-style: italic;
+        margin: 0 0 8px 0;
+        opacity: 0.7;
+    }
+
+    .ai-summary-text {
+        font-size: 14px;
+        color: #374151;
+        background: #ecfdf5;
+        padding: 10px 12px;
+        border-radius: 8px;
+        margin: 0 0 12px 0;
+        line-height: 1.5;
+        border-left: 3px solid var(--primary);
+    }
+
+    @media (prefers-color-scheme: dark) {
+        .ai-summary-text {
+            background: #0f2a1d;
+            color: #c8e6c9;
+        }
+    }
+
     .news-link {
         display: inline-flex;
         align-items: center;
@@ -239,85 +260,94 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🌍 欧洲ESG新闻</h1>
+            <h1>欧洲ESG新闻</h1>
             <div class="meta">
-                <span>2026年03月10日</span>
-                <span class="count-badge">今日 7 条</span>
+                <span>2026年03月11日</span>
+                <span class="count-badge">8条</span>
             </div>
         </div>
-        
+        <div class="ai-summary">
+            <span>AI翻译摘要</span>
+            <span class="ai-model">Claude (LongCat-Flash-Chat)</span>
+        </div>
         <div class="news-list">
-
-        <div class="news-item">
+<div class="news-item">
             <div class="news-header">
                 <span class="news-source">Carbon Pulse</span>
-                <span class="news-time">2026-03-10 17:05</span>
+                <span class="news-time">2026-03-11 06:39</span>
             </div>
-            <h3 class="news-title">Almost half of CDR supply already reserved up to 2030, survey data shows</h3>
-            <p class="news-summary">Most of the supply of permanent carbon removals (CDR) up to 2030 has already been reserved by buyers, data collected by </p>
-            <a class="news-link" href="https://carbon-pulse.com/491457/">阅读原文</a>
+            <h3 class="news-title">碳信断崖 澳洲二月惊雷</h3>
+            <p class="news-original-title">原文: Large spike in CER retirements see Australian voluntary carbon credit cancellations rise in Feb</p>
+            <p class="ai-summary-text">澳大利亚二月自愿注销京都时期碳信用额激增，中介机构操作频繁，市场流动性承压，碳信用价值面临短期剧烈波动风险。</p>
+            <a class="news-link" href="https://carbon-pulse.com/491692/">阅读原文</a>
         </div>
-
-        <div class="news-item">
+<div class="news-item">
             <div class="news-header">
                 <span class="news-source">Carbon Pulse</span>
-                <span class="news-time">2026-03-10 16:17</span>
+                <span class="news-time">2026-03-11 05:52</span>
             </div>
-            <h3 class="news-title">CORSIA futures hit 15-month low as EEU issuances breach 32 mln</h3>
-            <p class="news-summary">The supply of carbon credits for Phase 1 of the aviation offsetting scheme CORSIA reached more than 32 million as of ear</p>
-            <a class="news-link" href="https://carbon-pulse.com/491375/">阅读原文</a>
+            <h3 class="news-title">化工巨头借碳市破浪</h3>
+            <p class="news-original-title">原文: INTERVIEW: Carbon markets ‘powerful opportunity’ to compete aggressively, says chemicals company CEO</p>
+            <p class="ai-summary-text">一家澳洲化工企业完成融资后，积极布局自愿碳市场，CEO称碳交易是激烈竞争中不可忽视的强力机遇。</p>
+            <a class="news-link" href="https://carbon-pulse.com/491676/">阅读原文</a>
         </div>
-
-        <div class="news-item">
+<div class="news-item">
             <div class="news-header">
                 <span class="news-source">Carbon Pulse</span>
-                <span class="news-time">2026-03-10 15:55</span>
+                <span class="news-time">2026-03-11 00:01</span>
             </div>
-            <h3 class="news-title">Nigeria well-placed to phase in a carbon tax, and eventually an emissions trading scheme -report</h3>
-            <p class="news-summary">Nigeria is well-placed to begin phasing in a carbon pricing scheme, starting with a tax in the near-term and eventually </p>
-            <a class="news-link" href="https://carbon-pulse.com/491342/">阅读原文</a>
+            <h3 class="news-title">净零之路 实为省钱良策</h3>
+            <p class="news-original-title">原文: Net zero more cost-effective than continued reliance on fossil fuels, UK advisors say</p>
+            <p class="ai-summary-text">英国顾问指出，实现2050年净零排放成本仅相当于一次化石燃料危机支出，长期看比持续依赖化石能源更经济。</p>
+            <a class="news-link" href="https://carbon-pulse.com/491147/">阅读原文</a>
         </div>
-
-        <div class="news-item">
+<div class="news-item">
             <div class="news-header">
                 <span class="news-source">Carbon Pulse</span>
-                <span class="news-time">2026-03-10 15:43</span>
+                <span class="news-time">2026-03-10 23:01</span>
             </div>
-            <h3 class="news-title">Select European corporate buyers favouring NbS over engineered removals, study finds</h3>
-            <p class="news-summary">Some European corporate climate managers are showing a preference for nature-based solutions (NbS) over engineered carbo</p>
-            <a class="news-link" href="https://carbon-pulse.com/491353/">阅读原文</a>
+            <h3 class="news-title">农排定价 欧盟再吹东风</h3>
+            <p class="news-original-title">原文: The return of the AgETS? EU’s scientific climate advisors recommend pricing agricultural emissions</p>
+            <p class="ai-summary-text">欧盟独立气候顾问建议对农业温室气体排放定价，或重启农业排放交易体系，农业减排压力骤增。</p>
+            <a class="news-link" href="https://carbon-pulse.com/491504/">阅读原文</a>
         </div>
-
-        <div class="news-item">
+<div class="news-item">
             <div class="news-header">
                 <span class="news-source">Carbon Pulse</span>
-                <span class="news-time">2026-03-10 15:41</span>
+                <span class="news-time">2026-03-10 22:52</span>
             </div>
-            <h3 class="news-title">EU leaders to call for ETS reform proposals by July in push to tame power prices</h3>
-            <p class="news-summary">EU leaders want the European Commission to present reforms to the Emissions Trading System (ETS) by July, along with a r</p>
-            <a class="news-link" href="https://carbon-pulse.com/491396/">阅读原文</a>
+            <h3 class="news-title">阿省蓝图 须经真金火炼</h3>
+            <p class="news-original-title">原文: Alberta needs to prove its plan to net zero will work in MoU negotiations -think tank</p>
+            <p class="ai-summary-text">加拿大智库警告，阿尔伯塔省须证明其净零计划切实可行，否则在联邦备忘录谈判中将难获信任与支持。</p>
+            <a class="news-link" href="https://carbon-pulse.com/491619/">阅读原文</a>
         </div>
-
-        <div class="news-item">
+<div class="news-item">
             <div class="news-header">
                 <span class="news-source">Carbon Pulse</span>
-                <span class="news-time">2026-03-10 15:04</span>
+                <span class="news-time">2026-03-10 22:45</span>
             </div>
-            <h3 class="news-title">Nigeria signs LoA for international sale of 5.2 mln cookstove carbon credits</h3>
-            <p class="news-summary">A clean cookstove developer is looking to boost the supply of carbon credits into the first phase of the aviation offset</p>
-            <a class="news-link" href="https://carbon-pulse.com/491341/">阅读原文</a>
+            <h3 class="news-title">California emissions advisory group flags GGRF revenue concerns</h3>
+            <p class="news-summary">California regulatory staff projections show revenues for the GHG Reduction Fund (GGRF) will never meet the amount requi</p>
+            <a class="news-link" href="https://carbon-pulse.com/491560/">阅读原文</a>
         </div>
-
-        <div class="news-item">
+<div class="news-item">
             <div class="news-header">
                 <span class="news-source">Carbon Pulse</span>
-                <span class="news-time">2026-03-10 14:46</span>
+                <span class="news-time">2026-03-10 22:17</span>
             </div>
-            <h3 class="news-title">EU announces €200 mln ETS-backed funding for innovative nuclear technologies</h3>
-            <p class="news-summary">European Commission President Ursula von der Leyen has announced a new €200 million guarantee financed by the EU’s Emiss</p>
-            <a class="news-link" href="https://carbon-pulse.com/491310/">阅读原文</a>
+            <h3 class="news-title">PREVIEW: Traders expect sellout of cost containment supply at Q1 RGGI auction</h3>
+            <p class="news-summary">Traders polled by Carbon Pulse ahead of Wednesday's Q1 RGGI auction said they expected a sellout of Cost Containment Res</p>
+            <a class="news-link" href="https://carbon-pulse.com/491305/">阅读原文</a>
         </div>
-
+<div class="news-item">
+            <div class="news-header">
+                <span class="news-source">Carbon Pulse</span>
+                <span class="news-time">2026-03-10 22:06</span>
+            </div>
+            <h3 class="news-title">Chile approves priority mitigation activities list for Article 6</h3>
+            <p class="news-summary">Chile has approved a list of priority and contraindicated mitigation activity types for the generation and authorisation</p>
+            <a class="news-link" href="https://carbon-pulse.com/491595/">阅读原文</a>
+        </div>
         </div>
         <div class="footer">
             <div class="footer-sources">来源：欧盟委员会 · 欧洲环境署 · 德勤 · 路透 · Carbon Pulse</div>
