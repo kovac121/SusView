@@ -33,7 +33,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install feedparser python-dateutil scrapling browserforge
+          pip install feedparser python-dateutil scrapling browserforge curl-cffi
 
       - name: Run ESG News Fetcher (main.py)
         env:
