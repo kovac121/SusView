@@ -1,24 +1,99 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 欧洲ESG新闻抓取脚本
 定时运行抓取RSS源并推送到微信
 """
+import sys
+import io
+
+# 解决Windows控制台编码问题
+if sys.platform == 'win32':
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
 import os
 import re
 import json
-import requests
+from pathlib import Path
 from datetime import datetime
 from dateutil import parser as date_parser
+from concurrent.futures import ThreadPoolExecutor
 import feedparser
+from scrapling import Fetcher
+import time
+from threading import Lock
 
 # AI 摘要功能
 try:
-    from ai_providers import get_ai_summary
+    from ai_providers import get_ai_summary, get_model_name
     AI_ENABLED = True
 except ImportError:
     AI_ENABLED = False
     print("⚠️ AI功能未启用 (ai_providers.py 未找到)")
+
+# 速率限制器 - 每分钟最多15次请求
+class RateLimiter:
+    def __init__(self, max_requests_per_minute=15):
+        self.max_requests = max_requests_per_minute
+        self.requests = []
+        self.lock = Lock()
+
+    def wait_if_needed(self):
+        """如果需要，等待直到可以发送下一个请求"""
+        with self.lock:
+            now = time.time()
+            # 移除1分钟前的请求记录
+            self.requests = [req_time for req_time in self.requests if now - req_time < 60]
+
+            # 如果达到限制，等待
+            if len(self.requests) >= self.max_requests:
+                sleep_time = 60 - (now - self.requests[0]) + 1
+                print(f"⏰ 已达到速率限制，等待 {sleep_time:.1f} 秒...")
+                time.sleep(sleep_time)
+                # 清空旧的请求记录
+                now = time.time()
+                self.requests = [req_time for req_time in self.requests if now - req_time < 60]
+
+            # 记录当前请求
+            self.requests.append(now)
+
+# 全局速率限制器
+rate_limiter = RateLimiter()
+
+
+def parse_ai_translations(ai_content, news_list):
+    """
+    解析AI返回的JSON翻译数据
+
+    Args:
+        ai_content: AI返回的JSON字符串
+        news_list: 原始新闻列表
+
+    Returns:
+        list: 更新后的新闻列表，包含中文标题和AI摘要
+    """
+    if not ai_content:
+        return news_list
+
+    try:
+        # 尝试提取JSON部分
+        json_match = re.search(r'\[.*\]', ai_content, re.DOTALL)
+        if json_match:
+            translations = json.loads(json_match.group())
+        else:
+            translations = json.loads(ai_content)
+
+        # 更新新闻列表
+        for i, trans in enumerate(translations):
+            if i < len(news_list):
+                news_list[i]['title_cn'] = trans.get('title', news_list[i].get('title', ''))
+                news_list[i]['ai_summary'] = trans.get('summary', '')
+
+        return news_list
+    except json.JSONDecodeError as e:
+        print(f"⚠️ AI返回数据解析失败: {e}")
+        return news_list
 
 
 
@@ -27,55 +102,145 @@ RSS_SOURCES = [
     {
         'name': '欧盟委员会气候',
         'url': 'https://climate.ec.europa.eu/rss_en',
-        'keywords': ['environment', 'climate', 'energy', 'sustainability', 'green', 'carbon', 'emissions', 'ESG']
+        'type': 'rss',
+        'keywords': ['environment', 'climate', 'energy', 'sustainability', 'green', 'carbon', 'emissions', 'ESG'],
+        'selectors': ['article', 'main', '.content', '.article']
     },
     {
         'name': '欧洲环境署 EEA',
         'url': 'https://www.eea.europa.eu/en/rss',
-        'keywords': ['environment', 'climate', 'sustainability', 'carbon', 'emissions', 'ESG']
+        'type': 'rss',
+        'keywords': ['environment', 'climate', 'sustainability', 'carbon', 'emissions', 'ESG'],
+        'selectors': ['article', 'main', '.content', '.article']
     },
     {
         'name': '德勤ESG',
         'url': 'https://www2.deloitte.com/content/Domains/rss/sustainability.rss',
-        'keywords': ['ESG', 'sustainability', 'climate', 'green', 'carbon', 'net zero']
+        'type': 'rss',
+        'keywords': ['ESG', 'sustainability', 'climate', 'green', 'carbon', 'net zero'],
+        'selectors': ['article', 'main', '.content', '.article']
     },
     {
         'name': 'Reuters ESG',
         'url': 'https://www.reutersagency.com/feed/?best-topics=esg&post_type=best',
-        'keywords': ['ESG', 'sustainability', 'climate', 'carbon', 'emissions', 'green']
+        'type': 'rss',
+        'keywords': ['ESG', 'sustainability', 'climate', 'carbon', 'emissions', 'green'],
+        'selectors': ['article', 'main', '.content', '.article']
     },
     {
         'name': 'Carbon Pulse',
         'url': 'https://carbon-pulse.com/feed/',
-        'keywords': ['carbon', 'ETS', 'emissions', 'trading', 'allowance']
-    },
+        'type': 'rss',
+        'keywords': ['carbon', 'ETS', 'emissions', 'trading', 'allowance'],
+        'selectors': ['.post', '.article', '.content', '.entry-content']
+    }
 ]
+
+# 媒体源配置（直接抓取的源）
+MEDIA_SOURCES = [
+    {
+        'name': 'Bloomberg ESG',
+        'url': 'https://www.bloomberg.com/topics/esg',
+        'type': 'scrape',
+        'keywords': ['ESG', 'sustainability', 'climate', 'carbon', 'emissions'],
+        'selectors': ['.article-body', '.content', 'article', 'main'],
+        'scrape_pattern': 'data-testid="article-body"',
+        'detail_url_pattern': 'https://www.bloomberg.com/.*',
+        'max_articles': 5
+    },
+    {
+        'name': 'Financial Times ESG',
+        'url': 'https://www.ft.com/content/climate-environment',
+        'type': 'scrape',
+        'keywords': ['ESG', 'sustainability', 'climate', 'carbon', 'emissions'],
+        'selectors': ['.article-body-content', 'article', 'main', '.content'],
+        'scrape_pattern': 'data-content-type="article"',
+        'detail_url_pattern': 'https://www.ft.com/content/.*',
+        'max_articles': 5
+    },
+    {
+        'name': 'ICIS ESG',
+        'url': 'https://www.icis.com/energy-transition-esg/',
+        'type': 'scrape',
+        'keywords': ['carbon', 'emissions', 'trading', 'climate', 'ESG'],
+        'selectors': ['.article-content', 'article', 'main', '.content'],
+        'scrape_pattern': 'class="article"',
+        'detail_url_pattern': 'https://www.icis.com/.*',
+        'max_articles': 5
+    },
+    {
+        'name': 'S&P Global ESG',
+        'url': 'https://www.spglobal.com/esg/',
+        'type': 'scrape',
+        'keywords': ['ESG', 'sustainability', 'climate', 'carbon', 'emissions'],
+        'selectors': ['.article-content', 'article', 'main', '.content'],
+        'scrape_pattern': 'class="article"',
+        'detail_url_pattern': 'https://www.spglobal.com/.*',
+        'max_articles': 5
+    },
+    {
+        'name': 'Global Platts ESG',
+        'url': 'https://www.spglobal.com/commodityinsights/en/',
+        'type': 'scrape',
+        'keywords': ['energy', 'carbon', 'emissions', 'climate', 'ESG'],
+        'selectors': ['.article-content', 'article', 'main', '.content'],
+        'scrape_pattern': 'class="article"',
+        'detail_url_pattern': 'https://www.spglobal.com/.*',
+        'max_articles': 5
+    }
+]
+
+# 合并所有源
+ALL_SOURCES = RSS_SOURCES + MEDIA_SOURCES
 
 # 关键词过滤（用于筛选ESG相关内容）
 ESG_KEYWORDS = [
+    # ESG基础关键词
     'ESG', 'sustainability', 'sustainable', 'climate', 'carbon', 'emissions',
     'green', 'renewable', 'net zero', 'carbon neutral', 'environmental',
-    'EU ETS', 'emissions trading', 'carbon market', 'carbon credit',
-    'circular economy', 'green deal', 'fit for 55'
+
+    # 欧洲碳市场核心关键词
+    'EU ETS', 'EU Emissions Trading System', 'European Union Emissions Trading',
+    'carbon market', 'carbon price', 'EUA', 'allowance', 'allowance price',
+    'carbon credit', 'carbon offset', 'carbon allowance', 'emission allowance',
+    'emissions trading', 'greenhouse gas emissions', 'GHG emissions',
+    'cap and trade', 'carbon cap', 'emission cap', 'carbon auction',
+    'carbon market reform', 'ETS reform', 'EU climate policy',
+
+    # 具体产品和代码
+    'EUA futures', 'carbon futures', ' allowance futures', 'carbon contracts',
+    'Phase 4', 'Phase 3', 'Trading Period', 'MRVA', 'FLEX', 'NER',
+
+    # 政策和法规
+    'Fit for 55', 'Green Deal', 'Climate Law', 'Carbon Border Adjustment',
+    'CBAM', 'carbon border tax', 'energy transition', 'just transition',
+
+    # 其他相关术语
+    'circular economy', 'green deal', 'fit for 55',
+    'decarbonization', 'decarbonize', 'low carbon', 'zero carbon',
+    'climate target', 'carbon budget', 'climate action'
 ]
+
+# 预编译正则表达式（性能优化）
+ESG_PATTERN = re.compile('|'.join(re.escape(kw) for kw in ESG_KEYWORDS), re.IGNORECASE)
 
 # ===== 函数 =====
 
 def is_esg_related(text):
-    """检查文本是否与ESG相关"""
+    """检查文本是否与ESG相关（使用预编译正则）"""
     if not text:
         return False
-    text_lower = text.lower()
-    for keyword in ESG_KEYWORDS:
-        if keyword.lower() in text_lower:
-            return True
-    return False
+    return bool(ESG_PATTERN.search(text))
 
 def fetch_rss_news(source):
     """抓取单个RSS源"""
     news_list = []
     try:
         print(f"抓取: {source['name']}")
+
+        # 应用速率限制
+        rate_limiter.wait_if_needed()
+
         feed = feedparser.parse(source['url'])
 
         for entry in feed.entries[:10]:  # 每个源取最新10条
@@ -111,50 +276,222 @@ def fetch_rss_news(source):
 
     return news_list
 
+def fetch_page_content(url, selectors=None, max_retries=2):
+    """使用scrapling抓取网页内容
+
+    Args:
+        url: 目标URL
+        selectors: CSS选择器列表，默认为 ['article', 'main', '.content', '.article']
+        max_retries: 最大重试次数
+
+    Returns:
+        提取的文本内容，如果失败返回None
+    """
+    if selectors is None:
+        selectors = ['article', 'main', '.content', '.article', '.post-content']
+
+    # User-Agent列表（避免被反爬）
+    user_agents = [
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:89.0) Gecko/20100101 Firefox/89.0',
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:89.0) Gecko/20100101 Firefox/89.0'
+    ]
+
+    for attempt in range(max_retries):
+        try:
+            # 应用速率限制
+            rate_limiter.wait_if_needed()
+
+            # 轮换User-Agent
+            ua = user_agents[attempt % len(user_agents)]
+            session = Fetcher(default_headers={'User-Agent': ua})
+
+            # 添加随机延迟，避免请求过快
+            if attempt > 0:
+                import time
+                time.sleep(1 + attempt * 0.5)
+
+            response = session.get(url)
+
+            # 尝试多个选择器
+            for selector in selectors:
+                try:
+                    element = response.css(selector).first()
+                    if element:
+                        text = element.text(separator=' ', trim=True)
+                        # 清理多余空白和特殊字符
+                        text = re.sub(r'\s+', ' ', text).strip()
+                        text = re.sub(r'[\n\r\t]+', ' ', text)
+                        # 提取正文内容（去除导航栏、广告等）
+                        if len(text) > 100:  # 只返回足够长度的内容
+                            return text[:800]  # 增加内容长度
+                except Exception as e:
+                    continue
+
+            # 如果选择器都失败，尝试提取主要内容
+            if response.text:
+                # 尝试从页面中提取主要内容
+                content = response.text
+                # 移除script和style标签
+                content = re.sub(r'<(script|style)[^>]*>.*?</\1>', '', content, flags=re.DOTALL)
+                # 提取纯文本
+                text = re.sub(r'<[^>]+>', ' ', content)
+                text = re.sub(r'\s+', ' ', text).strip()
+                if len(text) > 200:
+                    return text[:800]
+
+            return None
+
+        except Exception as e:
+            if attempt == max_retries - 1:
+                print(f"抓取页面失败 {url} (尝试 {attempt + 1}/{max_retries}): {e}")
+            else:
+                print(f"抓取页面失败，正在重试 {url} (尝试 {attempt + 1}/{max_retries}): {e}")
+
+    return None
+
+
+def scrape_media_source(source):
+    """专门针对特定媒体源的抓取函数
+
+    Args:
+        source: 媒体源配置字典
+
+    Returns:
+        list: 新闻列表
+    """
+    news_list = []
+
+    try:
+        print(f"抓取媒体源: {source['name']} - {source['url']}")
+
+        if source['type'] == 'rss':
+            # RSS源使用原有逻辑
+            return fetch_rss_news(source)
+
+        elif source['type'] == 'scrape':
+            # 直接抓取网页
+            session = Fetcher(default_headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'})
+
+            # 抓取主页面
+            response = session.get(source['url'])
+
+            # 根据网站特性查找新闻链接
+            if 'bloomberg.com' in source['url']:
+                # Bloomberg - 查找带有ESG标签的文章
+                links = response.css('a[data-testid="article-link"]').getall()
+                links = [link for link in links if '/articles/' in link]
+
+            elif 'ft.com' in source['url']:
+                # Financial Times - 查找文章链接
+                links = response.css('a[data-trackable="headline"]').getall()
+                links = [link for link in links if '/content/' in link]
+
+            elif 'icis.com' in source['url']:
+                # ICIS - 查找文章链接
+                links = response.css('a[href*="/energy-transition-esg/"]').getall()
+
+            elif 'spglobal.com' in source['url']:
+                # S&P Global - 查找文章链接
+                links = response.css('a[href*="/esg/"]').getall()
+
+            else:
+                # 默认查找所有可能的链接
+                links = response.css('a[href]').getall()
+
+            # 提取并处理新闻链接
+            for link in links[:10]:  # 最多处理10篇文章
+                try:
+                    # 提取URL
+                    import re
+                    match = re.search(r'href="([^"]+)"', link)
+                    if match:
+                        url = match.group(1)
+                        if url.startswith('/'):
+                            # 相对URL，补全为完整URL
+                            domain = source['url'].split('//')[1].split('/')[0]
+                            url = f"https://{domain}{url}"
+
+                        # 检查是否符合URL模式
+                        if 'detail_url_pattern' in source and not re.search(source['detail_url_pattern'], url):
+                            continue
+
+                        # 抓取文章内容
+                        content = fetch_page_content(url, source['selectors'])
+                        if content and is_esg_related(content):
+                            # 提取标题（简单处理，实际可能需要更复杂的解析）
+                            title = f"新闻标题 - {source['name']}"
+                            summary = content[:200] + '...' if len(content) > 200 else content
+
+                            # 获取当前时间
+                            published = datetime.now().strftime('%Y-%m-%d %H:%M')
+
+                            news_list.append({
+                                'title': title,
+                                'link': url,
+                                'summary': summary,
+                                'published': published,
+                                'source': source['name']
+                            })
+
+                except Exception as e:
+                    print(f"处理链接失败: {e}")
+                    continue
+
+    except Exception as e:
+        print(f"抓取媒体源 {source['name']} 失败: {e}")
+
+    return news_list
+
 def fetch_all_news():
-    """抓取所有RSS源"""
+    """抓取所有新闻源（RSS和直接抓取）"""
+    # 并发抓取所有源
+    def get_fetcher(source):
+        # 兼容旧版本RSS源（没有type字段）
+        if 'type' not in source or source['type'] == 'rss':
+            return fetch_rss_news(source)
+        else:
+            return scrape_media_source(source)
+
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        results = executor.map(get_fetcher, ALL_SOURCES)
+
     all_news = []
-    for source in RSS_SOURCES:
-        news = fetch_rss_news(source)
-        all_news.extend(news)
+    for news_list in results:
+        if news_list:  # 确保有结果
+            all_news.extend(news_list)
 
     # 按发布时间排序
     all_news.sort(key=lambda x: x.get('published', ''), reverse=True)
 
-    # 去重（根据标题相似度）
-    seen = set()
+    # 去重（基于URL和标题）
+    seen_urls = set()
+    seen_titles = set()
     unique_news = []
+
     for news in all_news:
-        title_key = news['title'][:30].lower()
-        if title_key not in seen:
-            seen.add(title_key)
-            unique_news.append(news)
+        # 基于URL去重
+        url_key = news.get('link', '')
+        if url_key in seen_urls:
+            continue
+        seen_urls.add(url_key)
 
-    return unique_news[:20]  # 最多返回20条
+        # 基于标题去重
+        title = news.get('title', '').lower().strip()
+        title_key = title[:50]  # 取前50个字符
+        if title_key in seen_titles:
+            continue
+        seen_titles.add(title_key)
 
-def format_news_message(news_list):
-    """格式化新闻为微信消息"""
-    if not news_list:
-        return "今日暂无新的ESG新闻"
+        unique_news.append(news)
 
-    date_str = datetime.now().strftime('%Y-%m-%d')
-    message = f"📰 欧洲ESG新闻 ({date_str})\n\n"
+    return unique_news[:30]  # 最多返回30条新闻
 
-    for i, news in enumerate(news_list[:8], 1):  # 最多8条
-        message += f"{i}. {news['title']}\n"
-        message += f"   来源: {news['source']}\n"
-        message += f"   链接: {news['link']}\n\n"
-
-    message += "---来自SusView自动推送"
-    return message
-
-
-def format_wechat_html(news_list, ai_summary=None):
-    """生成适合微信的HTML格式 - 专业ESG风格，适配黑暗模式"""
+def format_wechat_html(news_list, ai_model_name=None):
+    """生成适合微信的HTML格式"""
     if not news_list:
         return ""
-
-    date_str = datetime.now().strftime('%Y年%m月%d日')
 
     # 来源映射（简称）
     source_map = {
@@ -165,281 +502,30 @@ def format_wechat_html(news_list, ai_summary=None):
         'Carbon Pulse': 'Carbon Pulse'
     }
 
-    # AI摘要区域
-    ai_section = ""
-    if ai_summary:
-        # 处理AI摘要中的换行
-        ai_summary_html = ai_summary.replace('\n', '<br>')
-        ai_section = f"""
-        <div class="ai-summary">
-            <div class="ai-header">
-                <span class="ai-icon">🤖</span>
-                <span>AI要点分析</span>
-            </div>
-            <div class="ai-content">{ai_summary_html}</div>
-        </div>
-        """
-
-    html = f"""<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<style>
-    :root {{
-        --primary: #90EE90;
-        --primary-dark: #228B22;
-        --primary-light: #98FB98;
-        --bg: #ffffff;
-        --bg-secondary: #f8f9fa;
-        --text: #1a1a1a;
-        --text-secondary: #666666;
-        --border: #e9ecef;
-        --card-bg: #ffffff;
-        --tag-bg: #e8f5e9;
-        --tag-text: #2e7d32;
-    }}
-
-    @media (prefers-color-scheme: dark) {{
-        :root {{
-            --bg: #1a1a1a;
-            --bg-secondary: #2d2d2d;
-            --text: #e8e8e8;
-            --text-secondary: #a0a0a0;
-            --border: #3d3d3d;
-            --card-bg: #252525;
-            --tag-bg: #1a3d1a;
-            --tag-text: #90EE90;
-        }}
-    }}
-
-    * {{ box-sizing: border-box; margin: 0; padding: 0; }}
-
-    body {{
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-        line-height: 1.6;
-        color: var(--text);
-        background: var(--bg);
-        max-width: 100%;
-        padding: 16px;
-    }}
-
-    .container {{
-        max-width: 600px;
-        margin: 0 auto;
-    }}
-
-    .header {{
-        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-        color: #000;
-        padding: 24px 20px;
-        text-align: center;
-        border-radius: 12px 12px 0 0;
-    }}
-
-    @media (prefers-color-scheme: dark) {{
-        .header {{
-            background: linear-gradient(135deg, var(--primary-dark) 0%, #006400 100%);
-            color: var(--primary-light);
-        }}
-    }}
-
-    .header h1 {{
-        margin: 0;
-        font-size: 22px;
-        font-weight: 700;
-        letter-spacing: 0.5px;
-    }}
-
-    .header .meta {{
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 12px;
-        margin-top: 8px;
-        font-size: 14px;
-        opacity: 0.85;
-    }}
-
-    .count-badge {{
-        background: rgba(0,0,0,0.15);
-        padding: 2px 10px;
-        border-radius: 12px;
-        font-weight: 500;
-    }}
-
-    /* AI摘要样式 */
-    .ai-summary {{
-        background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-        border-bottom: 1px solid var(--border);
-        padding: 16px;
-    }}
-
-    @media (prefers-color-scheme: dark) {{
-        .ai-summary {{
-            background: linear-gradient(135deg, #1e3a5f 0%, #0c1929 100%);
-        }}
-    }}
-
-    .ai-header {{
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 13px;
-        font-weight: 600;
-        color: #0369a1;
-        margin-bottom: 10px;
-    }}
-
-    @media (prefers-color-scheme: dark) {{
-        .ai-header {{
-            color: #7dd3fc;
-        }}
-    }}
-
-    .ai-icon {{ font-size: 16px; }}
-
-    .ai-content {{
-        font-size: 14px;
-        color: var(--text);
-        line-height: 1.7;
-    }}
-
-    .news-list {{
-        background: var(--bg-secondary);
-        padding: 16px;
-    }}
-
-    .news-item {{
-        background: var(--card-bg);
-        border-radius: 10px;
-        padding: 16px;
-        margin-bottom: 12px;
-        border: 1px solid var(--border);
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }}
-
-    .news-item:hover {{
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    }}
-
-    .news-item:last-child {{ margin-bottom: 0; }}
-
-    .news-header {{
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 10px;
-    }}
-
-    .news-source {{
-        display: inline-block;
-        background: var(--tag-bg);
-        color: var(--tag-text);
-        padding: 3px 10px;
-        border-radius: 4px;
-        font-size: 11px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.3px;
-    }}
-
-    .news-time {{
-        font-size: 12px;
-        color: var(--text-secondary);
-    }}
-
-    .news-title {{
-        font-size: 16px;
-        font-weight: 600;
-        color: var(--text);
-        margin: 0 0 8px 0;
-        line-height: 1.4;
-    }}
-
-    .news-summary {{
-        font-size: 14px;
-        color: var(--text-secondary);
-        margin: 0 0 12px 0;
-        line-height: 1.5;
-    }}
-
-    .news-link {{
-        display: inline-flex;
-        align-items: center;
-        color: var(--primary-dark);
-        text-decoration: none;
-        font-size: 13px;
-        font-weight: 500;
-    }}
-
-    .news-link:hover {{
-        text-decoration: underline;
-    }}
-
-    .news-link:after {{
-        content: '→';
-        margin-left: 4px;
-        transition: transform 0.2s;
-    }}
-
-    .news-link:hover:after {{
-        transform: translateX(3px);
-    }}
-
-    @media (prefers-color-scheme: dark) {{
-        .news-link {{
-            color: var(--primary);
-        }}
-    }}
-
-    .footer {{
-        background: var(--bg-secondary);
-        padding: 16px;
-        text-align: center;
-        font-size: 12px;
-        color: var(--text-secondary);
-        border-radius: 0 0 12px 12px;
-        border-top: 1px solid var(--border);
-    }}
-
-    .footer-sources {{
-        margin-bottom: 8px;
-        font-weight: 500;
-    }}
-
-    .divider {{
-        width: 40px;
-        height: 2px;
-        background: var(--primary);
-        margin: 12px auto;
-        border-radius: 1px;
-    }}
-</style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>🌍 欧洲ESG新闻</h1>
-            <div class="meta">
-                <span>{date_str}</span>
-                <span class="count-badge">今日 {len(news_list[:8])} 条</span>
-            </div>
-        </div>
-        {ai_section}
-        <div class="news-list">
-"""
-
+    # 生成新闻项HTML
+    news_items = []
     for news in news_list[:8]:
         source = source_map.get(news['source'], news['source'])
         title = news['title']
+        title_cn = news.get('title_cn', '')
+        ai_summary = news.get('ai_summary', '')
         summary = news.get('summary', '')[:120]
         link = news['link']
         published = news.get('published', '')[:16]
 
-        html += f"""
-        <div class="news-item">
+        if title_cn:
+            item = f"""<div class="news-item">
+            <div class="news-header">
+                <span class="news-source">{source}</span>
+                <span class="news-time">{published}</span>
+            </div>
+            <h3 class="news-title">{title_cn}</h3>
+            <p class="news-original-title">原文: {title}</p>
+            {'<p class="ai-summary-text">' + ai_summary + '</p>' if ai_summary else ''}
+            <a class="news-link" href="{link}">阅读原文</a>
+        </div>"""
+        else:
+            item = f"""<div class="news-item">
             <div class="news-header">
                 <span class="news-source">{source}</span>
                 <span class="news-time">{published}</span>
@@ -447,43 +533,35 @@ def format_wechat_html(news_list, ai_summary=None):
             <h3 class="news-title">{title}</h3>
             <p class="news-summary">{summary}</p>
             <a class="news-link" href="{link}">阅读原文</a>
-        </div>
-"""
+        </div>"""
+        news_items.append(item)
 
-    html += """
-        </div>
-        <div class="footer">
-            <div class="footer-sources">来源：欧盟委员会 · 欧洲环境署 · 德勤 · 路透 · Carbon Pulse</div>
-            <div class="divider"></div>
-            SusView · 自动抓取整理
-        </div>
-    </div>
-</body>
-</html>
-"""
+    # AI区域
+    ai_section = ""
+    if ai_model_name:
+        ai_section = f"""<div class="ai-summary">
+            <span>AI翻译摘要</span>
+            <span class="ai-model">{ai_model_name}</span>
+        </div>"""
+
+    # 读取模板并替换
+    template_path = Path(__file__).parent / 'news' / 'template.html'
+    template = template_path.read_text(encoding='utf-8')
+    html = template.replace('{{date_str}}', datetime.now().strftime('%Y年%m月%d日'))
+    html = html.replace('{{count}}', str(len(news_list[:8])))
+    html = html.replace('{{ai_section}}', ai_section)
+    html = html.replace('{{news_items}}', '\n'.join(news_items))
+
     return html
 
-def save_to_github(message, html_content):
-    """保存新闻到GitHub兼容格式 (供GitHub Actions自动提交)"""
-    # 输出为Markdown格式，方便查看
-    print("\n" + "="*50)
-    print("📰 今日ESG新闻摘要")
-    print("="*50)
-    print(message)
-    print("="*50)
-
-    # 保存Markdown版本
-    with open('news/latest.md', 'w', encoding='utf-8') as f:
-        f.write(f"# 欧洲ESG新闻\n\n")
-        f.write(f"更新时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
-        f.write(message)
-        f.write("\n\n---\n自动抓取自 SusView\n")
-
-    # 保存HTML版本（可直接复制到微信）
-    with open('news/latest.html', 'w', encoding='utf-8') as f:
+def save_to_github(html_content):
+    """保存HTML到文件"""
+    # 保存HTML版本
+    html_path = Path(__file__).parent / 'news' / 'latest.html'
+    with open(html_path, 'w', encoding='utf-8') as f:
         f.write(html_content)
 
-    print("\n✅ 新闻已保存到 news/latest.md 和 news/latest.html")
+    print("\n✅ HTML已保存到 news/latest.html")
 
     return True
 
@@ -499,22 +577,25 @@ def main():
     news_list = fetch_all_news()
     print(f"共抓取到 {len(news_list)} 条ESG相关新闻")
 
-    # 获取AI摘要 (如果启用)
-    ai_summary = None
+    # 获取AI翻译和摘要 (如果启用)
+    ai_model_name = None
     if AI_ENABLED:
-        print("🤖 正在生成AI摘要...")
-        ai_summary = get_ai_summary(news_list)
-        if ai_summary:
-            print("✅ AI摘要生成成功")
+        print("🤖 正在生成AI翻译和摘要...")
+        ai_content, _ = get_ai_summary(news_list)
+        if ai_content:
+            # 解析AI返回的翻译数据
+            news_list = parse_ai_translations(ai_content, news_list)
+            # 获取模型名称
+            ai_model_name = get_model_name()
+            print(f"✅ AI翻译生成成功 ({ai_model_name})")
         else:
-            print("⚠️ AI摘要生成失败，将跳过")
+            print("⚠️ AI翻译生成失败，将跳过")
 
-    # 格式化消息
-    message = format_news_message(news_list)
-    html_content = format_wechat_html(news_list, ai_summary)
+    # 格式化HTML
+    html_content = format_wechat_html(news_list, ai_model_name)
 
-    # 保存到文件（GitHub会自动提交）
-    save_to_github(message, html_content)
+    # 保存到文件
+    save_to_github(html_content)
 
     print("=== 完成 ===")
 

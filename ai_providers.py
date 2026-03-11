@@ -1,13 +1,41 @@
 #!/usr/bin/env python3
 """
 AI Provider 适配器
-支持多种AI服务的统一调用接口
+支持多种AI服务的统一调用接口 (基于Anthropic兼容API)
 """
 
 import os
 import json
 import requests
+import urllib3
+from urllib3.util.ssl_ import create_urllib3_context
 from ai_config import AI_CONFIG
+
+# 禁用SSL警告
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+# 创建宽松的SSL上下文
+try:
+    CREATE_URLLIB3_CONTEXT = create_urllib3_context()
+except:
+    CREATE_URLLIB3_CONTEXT = None
+
+# 获取代理配置
+PROXY = os.environ.get('HTTP_PROXY') or os.environ.get('HTTPS_PROXY') or os.environ.get('http_proxy') or os.environ.get('https_proxy')
+SESSION = requests.Session()
+
+# 配置更宽松的SSL
+try:
+    import ssl
+    SSL_CONTEXT = ssl.create_default_context()
+    SSL_CONTEXT.check_hostname = False
+    SSL_CONTEXT.verify_mode = ssl.CERT_NONE
+    SESSION.mount('https://', requests.adapters.HTTPAdapter(ssl_context=SSL_CONTEXT))
+except:
+    pass
+
+if PROXY:
+    SESSION.proxies = {'http': PROXY, 'https': PROXY}
 
 
 def get_ai_summary(news_list, max_news=5):
@@ -20,7 +48,7 @@ def get_ai_summary(news_list, max_news=5):
         max_news: 最多处理的新闻数量
 
     Returns:
-        str: AI生成的摘要，失败时返回None
+        tuple: (AI返回的内容, 使用的模型名称)，失败时返回(None, None)
     """
     provider = AI_CONFIG.get('provider', 'custom')
 
@@ -28,230 +56,111 @@ def get_ai_summary(news_list, max_news=5):
     news_content = build_news_content(news_list, max_news)
 
     # 根据provider调用对应的AI服务
-    if provider == 'openai':
-        return call_openai(news_content)
-    elif provider == 'anthropic':
-        return call_anthropic(news_content)
-    elif provider == 'minimax':
-        return call_minimax(news_content)
-    elif provider == 'deepseek':
-        return call_deepseek(news_content)
-    elif provider == 'longcat':
-        return call_longcat(news_content)
+    result = None
+    if provider == 'anthropic':
+        result = call_anthropic(news_content)
     elif provider == 'custom':
-        return call_custom_api(news_content)
+        result = call_custom_api(news_content)
     else:
         print(f"⚠️ 未知的AI provider: {provider}")
-        return None
+
+    # 返回结果和模型名称
+    model_name = get_model_name() if result else None
+    return result, model_name
+
+
+def get_model_name():
+    """获取当前配置的模型名称"""
+    provider = AI_CONFIG.get('provider', 'custom')
+    config = AI_CONFIG.get(provider, {})
+
+    model_names = {
+        'anthropic': 'Claude',
+        'custom': 'Custom'
+    }
+
+    model = config.get('model', '')
+    prefix = model_names.get(provider, 'AI')
+
+    if model:
+        return f"{prefix} ({model})"
+    return prefix
 
 
 def build_news_content(news_list, max_news=5):
-    """构建发送给AI的新闻内容"""
-    content = "请为以下ESG新闻生成详细的中文摘要，包含背景、影响和意义：\n\n"
+    """构建发送给AI的新闻内容，要求返回JSON格式"""
+    content = """请为每条ESG新闻翻译标题为中文，要求：
+
+【标题风格 - 章回体】
+- 不超过15字
+- 突出冲击/影响
+- 使用比喻修辞
+- 如：野火焚林碳汇梦断加州
+
+【摘要】50-100字，精准提炼核心影响
+
+返回JSON：[{"title":"标题","summary":"摘要"}]
+
+新闻：
+"""
     for i, news in enumerate(news_list[:max_news], 1):
-        content += f"【新闻{i}】\n"
-        content += f"标题: {news.get('title', '')}\n"
-        content += f"来源: {news.get('source', '')}\n"
-        content += f"摘要: {news.get('summary', '')}\n"
-        content += f"链接: {news.get('link', '')}\n\n"
+        summary = news.get('summary', '')[:100]  # 截断摘要到100字
+        content += f"{i}. {news.get('title', '')}\n"
+        content += f"   {summary}\n\n"
     return content
-
-
-# ===== OpenAI =====
-
-def call_openai(content):
-    """调用 OpenAI API"""
-    import openai
-
-    config = AI_CONFIG.get('openai', {})
-    api_key = config.get('api_key') or os.environ.get('OPENAI_API_KEY')
-    model = config.get('model', 'gpt-3.5-turbo')
-
-    if not api_key:
-        print("⚠️ 未配置 OpenAI API Key")
-        return None
-
-    openai.api_key = api_key
-
-    try:
-        response = openai.ChatCompletion.create(
-            model=model,
-            messages=[
-                {"role": "system", "content": "你是一个专业的ESG新闻分析师，请用中文生成详细、有洞察力的新闻摘要。"},
-                {"role": "user", "content": content}
-            ],
-            max_tokens=1500,
-            temperature=0.7,
-        )
-        return response.choices[0].message.content
-    except Exception as e:
-        print(f"❌ OpenAI API 调用失败: {e}")
-        return None
 
 
 # ===== Anthropic Claude =====
 
 def call_anthropic(content):
-    """调用 Anthropic Claude API"""
-    try:
-        import anthropic
-    except ImportError:
-        print("⚠️ 请安装 anthropic 库: pip install anthropic")
-        return None
-
+    """调用 Anthropic Claude API (使用requests直接调用，支持自定义端点如LongCat)"""
     config = AI_CONFIG.get('anthropic', {})
     api_key = config.get('api_key') or os.environ.get('ANTHROPIC_API_KEY')
     model = config.get('model', 'claude-3-haiku-20240307')
+    api_base = config.get('api_base')  # 支持自定义端点
 
     if not api_key:
         print("⚠️ 未配置 Anthropic API Key")
         return None
 
+    if not api_base:
+        print("⚠️ 未配置 API 端点")
+        return None
+
+    # 使用 requests 直接调用 (LongCat 需要 Authorization: Bearer)
+    url = f"{api_base.rstrip('/')}/v1/messages"
+
     try:
-        client = anthropic.Anthropic(api_key=api_key)
-        message = client.messages.create(
-            model=model,
-            max_tokens=1500,
-            system="你是一个专业的ESG新闻分析师，请用中文生成详细、有洞察力的新闻摘要。",
-            messages=[{"role": "user", "content": content}]
+        response = SESSION.post(
+            url,
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "anthropic-version": "2023-06-01",
+                "Content-Type": "application/json"
+            },
+            json={
+                "model": model,
+                "max_tokens": 800,
+                "system": "你是一个专业的ESG新闻分析师，请用中文生成详细、有洞察力的新闻摘要。",
+                "messages": [{"role": "user", "content": content}]
+            },
+            timeout=60,
+            verify=False
         )
-        return message.content[0].text
+        # 检查响应状态
+        if response.status_code != 200:
+            print(f"❌ Anthropic API 返回错误 ({response.status_code}): {response.text}")
+            return None
+
+        result = response.json()
+
+        if 'content' in result and len(result['content']) > 0:
+            return result['content'][0].get('text', '')
+        else:
+            print(f"❌ Anthropic API 返回异常: {result}")
+            return None
     except Exception as e:
         print(f"❌ Anthropic API 调用失败: {e}")
-        return None
-
-
-# ===== MiniMax =====
-
-def call_minimax(content):
-    """调用 MiniMax API"""
-    config = AI_CONFIG.get('minimax', {})
-    api_key = config.get('api_key') or os.environ.get('MINIMAX_API_KEY')
-    model = config.get('model', 'abab6.5s-chat')
-    api_base = config.get('api_base', 'https://api.minimax.chat/v1')
-
-    if not api_key:
-        print("⚠️ 未配置 MiniMax API Key")
-        return None
-
-    url = f"{api_base}/text/chatcompletion_v2"
-
-    try:
-        response = requests.post(
-            url,
-            headers={
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json"
-            },
-            json={
-                "model": model,
-                "messages": [
-                    {"role": "system", "content": "你是一个专业的ESG新闻分析师，请用中文生成详细、有洞察力的新闻摘要。"},
-                    {"role": "user", "content": content}
-                ],
-                "max_tokens": 1500,
-                "temperature": 0.7
-            },
-            timeout=60
-        )
-        result = response.json()
-
-        if 'choices' in result and len(result['choices']) > 0:
-            return result['choices'][0]['message']['content']
-        else:
-            print(f"❌ MiniMax API 返回异常: {result}")
-            return None
-    except Exception as e:
-        print(f"❌ MiniMax API 调用失败: {e}")
-        return None
-
-
-# ===== DeepSeek =====
-
-def call_deepseek(content):
-    """调用 DeepSeek API"""
-    config = AI_CONFIG.get('deepseek', {})
-    api_key = config.get('api_key') or os.environ.get('DEEPSEEK_API_KEY')
-    model = config.get('model', 'deepseek-chat')
-
-    if not api_key:
-        print("⚠️ 未配置 DeepSeek API Key")
-        return None
-
-    url = "https://api.deepseek.com/chat/completions"
-
-    try:
-        response = requests.post(
-            url,
-            headers={
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json"
-            },
-            json={
-                "model": model,
-                "messages": [
-                    {"role": "system", "content": "你是一个专业的ESG新闻分析师，请用中文生成详细、有洞察力的新闻摘要。"},
-                    {"role": "user", "content": content}
-                ],
-                "max_tokens": 1500,
-                "temperature": 0.7
-            },
-            timeout=60
-        )
-        result = response.json()
-
-        if 'choices' in result and len(result['choices']) > 0:
-            return result['choices'][0]['message']['content']
-        else:
-            print(f"❌ DeepSeek API 返回异常: {result}")
-            return None
-    except Exception as e:
-        print(f"❌ DeepSeek API 调用失败: {e}")
-        return None
-
-
-# ===== LongCat =====
-
-def call_longcat(content):
-    """调用 LongCat API"""
-    config = AI_CONFIG.get('longcat', {})
-    api_key = config.get('api_key') or os.environ.get('LONGCAT_API_KEY')
-    model = config.get('model', 'longchat-lion-7b')
-    api_base = config.get('api_base', 'https://api.longcat.cn/v1')
-
-    if not api_key:
-        print("⚠️ 未配置 LongCat API Key")
-        return None
-
-    url = f"{api_base}/chat/completions"
-
-    try:
-        response = requests.post(
-            url,
-            headers={
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json"
-            },
-            json={
-                "model": model,
-                "messages": [
-                    {"role": "system", "content": "你是一个专业的ESG新闻分析师，请用中文生成详细、有洞察力的新闻摘要。"},
-                    {"role": "user", "content": content}
-                ],
-                "max_tokens": 1500,
-                "temperature": 0.7
-            },
-            timeout=60
-        )
-        result = response.json()
-
-        if 'choices' in result and len(result['choices']) > 0:
-            return result['choices'][0]['message']['content']
-        else:
-            print(f"❌ LongCat API 返回异常: {result}")
-            return None
-    except Exception as e:
-        print(f"❌ LongCat API 调用失败: {e}")
         return None
 
 
@@ -277,11 +186,12 @@ def call_custom_api(content):
     url = f"{api_base.rstrip('/')}/chat/completions"
 
     try:
-        response = requests.post(
+        response = SESSION.post(
             url,
             headers={
                 "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                "Connection": "close"
             },
             json={
                 "model": model,
@@ -289,10 +199,11 @@ def call_custom_api(content):
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": content}
                 ],
-                "max_tokens": 1500,
+                "max_tokens": 800,
                 "temperature": 0.7
             },
-            timeout=60
+            timeout=60,
+            verify=False
         )
         result = response.json()
 
@@ -304,26 +215,3 @@ def call_custom_api(content):
     except Exception as e:
         print(f"❌ 自定义API 调用失败: {e}")
         return None
-
-
-# ===== 添加新的AI服务商 =====
-# 参考上面的示例，添加新的函数并注册到 get_ai_summary 中
-#
-# 示例：添加新的API服务商 "newapi"
-# 1. 在 ai_config.py 中添加配置:
-#    'newapi': {
-#        'api_key': '',
-#        'model': 'xxx',
-#        'api_base': 'https://api.newapi.com/v1',
-#    }
-#
-# 2. 在 ai_providers.py 中添加调用函数:
-#    def call_newapi(content):
-#        config = AI_CONFIG.get('newapi', {})
-#        # 实现调用逻辑...
-#
-# 3. 在 get_ai_summary 中添加:
-#    elif provider == 'newapi':
-#        return call_newapi(content)
-#
-# 4. 修改 ai_config.py 中的 'provider' 为 'newapi'
