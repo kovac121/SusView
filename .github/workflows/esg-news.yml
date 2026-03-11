@@ -32,18 +32,19 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: |
+          pip install feedparser python-dateutil scrapling browserforge
 
-      - name: Run ESG News Fetcher
+      - name: Run ESG News Fetcher (main.py)
         env:
           LONGCAT_API_KEY: ${{ secrets.LONGCAT_API_KEY }}
-        run: python esg_news_bot.py
+        run: python main.py
 
       - name: Commit news
         if: success()
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add news/latest.md news/latest.html
+          git add news/latest.html
           git diff --staged --quiet || git commit -m "Update ESG news $(date '+%Y-%m-%d %H:%M')"
           git push
