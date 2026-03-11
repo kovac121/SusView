@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+    :root {
+        --primary: #22c55e;
+        --primary-dark: #15803d;
+        --primary-bg: #ecfdf5;
+        --bg: #ffffff;
+        --bg-secondary: #f8f9fa;
+        --text: #1a1a1a;
+        --text-secondary: #666666;
+        --border: #e9ecef;
+        --card-bg: #ffffff;
+        --tag-bg: #ecfdf5;
+        --tag-text: #047857;
+    }
+
+    @media (prefers-color-scheme: dark) {
+        :root {
+            --primary: #4ade80;
+            --primary-dark: #22c55e;
+            --bg: #0a0a0a;
+            --bg-secondary: #171717;
+            --text: #e8e8e8;
+            --text-secondary: #a0a0a0;
+            --border: #262626;
+            --card-bg: #1a1a1a;
+            --tag-bg: #14532d;
+            --tag-text: #86efac;
+        }
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+        line-height: 1.6;
+        color: var(--text);
+        background: var(--bg);
+        max-width: 100%;
+        padding: 16px;
+    }
+
+    .container {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    .header {
+        background: var(--primary);
+        color: #14532d;
+        padding: 20px;
+        text-align: center;
+        border-radius: 8px 8px 0 0;
+    }
+
+    @media (prefers-color-scheme: dark) {
+        .header {
+            background: var(--primary-dark);
+            color: #ffffff;
+            font-weight: 700;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+    }
+
+    .header h1 {
+        margin: 0;
+        font-size: 20px;
+        font-weight: 600;
+    }
+
+    .header .meta {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 12px;
+        margin-top: 8px;
+        font-size: 14px;
+        opacity: 0.85;
+    }
+
+    .count-badge {
+        background: rgba(0,0,0,0.15);
+        padding: 2px 10px;
+        border-radius: 12px;
+        font-weight: 500;
+    }
+
+    .ai-summary {
+        background: var(--primary-bg);
+        border-bottom: 1px solid var(--border);
+        padding: 12px 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 13px;
+        color: var(--tag-text);
+    }
+
+    @media (prefers-color-scheme: dark) {
+        .ai-summary {
+            background: #0f2a1d;
+            color: #a5d6a7;
+        }
+    }
+
+    .ai-model {
+        font-size: 12px;
+        opacity: 0.7;
+    }
+
+    .ai-content {
+        font-size: 14px;
+        color: var(--text);
+        line-height: 1.7;
+    }
+
+    .news-list {
+        background: var(--bg-secondary);
+        padding: 16px;
+    }
+
+    .news-item {
+        background: var(--card-bg);
+        border-radius: 10px;
+        padding: 16px;
+        margin-bottom: 12px;
+        border: 1px solid var(--border);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .news-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+
+    .news-item:last-child { margin-bottom: 0; }
+
+    .news-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
+    .news-source {
+        display: inline-block;
+        background: var(--tag-bg);
+        color: var(--tag-text);
+        padding: 3px 10px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    .news-time {
+        font-size: 12px;
+        color: var(--text-secondary);
+    }
+
+    .news-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--text);
+        margin: 0 0 8px 0;
+        line-height: 1.4;
+    }
+
+    .news-summary {
+        font-size: 14px;
+        color: var(--text-secondary);
+        margin: 0 0 12px 0;
+        line-height: 1.5;
+    }
+
+    .news-original-title {
+        font-size: 12px;
+        color: var(--text-secondary);
+        font-style: italic;
+        margin: 0 0 8px 0;
+        opacity: 0.7;
+    }
+
+    .ai-summary-text {
+        font-size: 14px;
+        color: #374151;
+        background: #ecfdf5;
+        padding: 10px 12px;
+        border-radius: 8px;
+        margin: 0 0 12px 0;
+        line-height: 1.5;
+        border-left: 3px solid var(--primary);
+    }
+
+    @media (prefers-color-scheme: dark) {
+        .ai-summary-text {
+            background: #0f2a1d;
+            color: #c8e6c9;
+        }
+    }
+
+    .news-link {
+        display: inline-flex;
+        align-items: center;
+        color: var(--primary-dark);
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 500;
+    }
+
+    .news-link:hover {
+        text-decoration: underline;
+    }
+
+    .news-link:after {
+        content: '→';
+        margin-left: 4px;
+        transition: transform 0.2s;
+    }
+
+    .news-link:hover:after {
+        transform: translateX(3px);
+    }
+
+    @media (prefers-color-scheme: dark) {
+        .news-link {
+            color: var(--primary);
+        }
+    }
+
+    .footer {
+        background: var(--bg-secondary);
+        padding: 16px;
+        text-align: center;
+        font-size: 12px;
+        color: var(--text-secondary);
+        border-radius: 0 0 12px 12px;
+        border-top: 1px solid var(--border);
+    }
+
+    .footer-sources {
+        margin-bottom: 8px;
+        font-weight: 500;
+    }
+
+    .divider {
+        width: 40px;
+        height: 2px;
+        background: var(--primary);
+        margin: 12px auto;
+        border-radius: 1px;
+    }
+</style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>欧洲ESG新闻</h1>
+            <div class="meta">
+                <span>{{date_str}}</span>
+                <span class="count-badge">{{count}}条</span>
+            </div>
+        </div>
+        {{ai_section}}
+        <div class="news-list">
+{{news_items}}
+        </div>
+        <div class="footer">
+            <div class="footer-sources">来源：欧盟委员会 · 欧洲环境署 · 德勤 · 路透 · Carbon Pulse</div>
+            <div class="divider"></div>
+            SusView · 自动抓取整理
+        </div>
+    </div>
+</body>
+</html>
