@@ -17,43 +17,58 @@ OUTPUT_FILE = NEWS_DIR / 'latest.html'
 # ===== RSS新闻源 =====
 RSS_SOURCES = [
     {
-        'name': '欧盟委员会气候',
-        'url': 'https://climate.ec.europa.eu/rss_en',
-        'type': 'rss',
-        'keywords': ['environment', 'climate', 'energy', 'sustainability', 'green', 'carbon', 'emissions', 'ESG'],
-        'selectors': ['article', 'main', '.content', '.article']
-    },
-    {
-        'name': '欧洲环境署 EEA',
-        'url': 'https://www.eea.europa.eu/en/rss',
-        'type': 'rss',
-        'keywords': ['environment', 'climate', 'sustainability', 'carbon', 'emissions', 'ESG'],
-        'selectors': ['article', 'main', '.content', '.article']
-    },
-    {
-        'name': '德勤ESG',
-        'url': 'https://www2.deloitte.com/content/Domains/rss/sustainability.rss',
-        'type': 'rss',
-        'keywords': ['ESG', 'sustainability', 'climate', 'green', 'carbon', 'net zero'],
-        'selectors': ['article', 'main', '.content', '.article']
-    },
-    {
-        'name': 'Reuters ESG',
-        'url': 'https://www.reutersagency.com/feed/?best-topics=esg&post_type=best',
-        'type': 'rss',
-        'keywords': ['ESG', 'sustainability', 'climate', 'carbon', 'emissions', 'green'],
-        'selectors': ['article', 'main', '.content', '.article']
-    },
-    {
         'name': 'Carbon Pulse',
         'url': 'https://carbon-pulse.com/feed/',
         'type': 'rss',
-        'keywords': ['carbon', 'ETS', 'emissions', 'trading', 'allowance'],
+        'keywords': ['carbon', 'ETS', 'emissions', 'trading', 'allowance', 'EU ETS'],
         'selectors': ['.post', '.article', '.content', '.entry-content']
+    },
+    {
+        'name': 'EU Commission',
+        'url': 'https://ec.europa.eu/commission/presscorner/api/rss',
+        'type': 'rss',
+        'keywords': ['EU ETS', 'climate', 'energy', 'carbon', 'emissions', 'Green Deal', 'CBAM'],
+        'selectors': ['article', 'main', '.content', '.article']
+    },
+    {
+        'name': 'DG CLIMA',
+        'url': 'https://ec.europa.eu/commission/presscorner/api/rss?language=en',
+        'type': 'rss',
+        'keywords': ['EU ETS', 'climate', 'carbon', 'emissions trading', 'allowance'],
+        'selectors': ['article', 'main', '.content', '.article']
+    },
+    {
+        'name': 'Carbon Brief',
+        'url': 'https://www.carbonbrief.org/feed',
+        'type': 'rss',
+        'keywords': ['carbon', 'climate', 'emissions', 'EU ETS', 'carbon market', 'energy'],
+        'selectors': ['article', 'main', '.content', '.entry-content']
+    },
+    {
+        'name': 'Sandbag',
+        'url': 'https://sandbag.be/feed/',
+        'type': 'rss',
+        'keywords': ['EU ETS', 'carbon', 'emissions', 'allowance', 'EUA', 'climate'],
+        'selectors': ['article', 'main', '.content', '.entry-content']
+    },
+    {
+        'name': 'Windpower Monthly',
+        'url': 'https://www.windpowermonthly.com/rss',
+        'type': 'rss',
+        'keywords': ['wind', 'renewable', 'energy', 'carbon', 'climate', 'ESG'],
+        'selectors': ['article', 'main', '.content', '.entry-content']
+    },
+    {
+        'name': 'Energy Monitor',
+        'url': 'https://www.energymonitor.ai/feed',
+        'type': 'rss',
+        'keywords': ['energy', 'carbon', 'climate', 'emissions', 'renewable', 'ESG'],
+        'selectors': ['article', 'main', '.content', '.entry-content']
     }
 ]
 
 # ===== 媒体源配置（直接抓取的源）=====
+# 注：这些源需要网页抓取，部分可能被反爬限制
 MEDIA_SOURCES = [
     {
         'name': 'Bloomberg ESG',
@@ -65,39 +80,12 @@ MEDIA_SOURCES = [
         'max_articles': 5
     },
     {
-        'name': 'Financial Times ESG',
-        'url': 'https://www.ft.com/content/climate-environment',
+        'name': 'Reuters ESG',
+        'url': 'https://www.reutersagency.com/feed/?best-topics=esg&post_type=best',
         'type': 'scrape',
         'keywords': ['ESG', 'sustainability', 'climate', 'carbon', 'emissions'],
-        'selectors': ['.article-body-content', 'article', 'main', '.content'],
-        'detail_url_pattern': 'https://www.ft.com/content/.*',
-        'max_articles': 5
-    },
-    {
-        'name': 'ICIS ESG',
-        'url': 'https://www.icis.com/energy-transition-esg/',
-        'type': 'scrape',
-        'keywords': ['carbon', 'emissions', 'trading', 'climate', 'ESG'],
-        'selectors': ['.article-content', 'article', 'main', '.content'],
-        'detail_url_pattern': 'https://www.icis.com/.*',
-        'max_articles': 5
-    },
-    {
-        'name': 'S&P Global ESG',
-        'url': 'https://www.spglobal.com/esg/',
-        'type': 'scrape',
-        'keywords': ['ESG', 'sustainability', 'climate', 'carbon', 'emissions'],
-        'selectors': ['.article-content', 'article', 'main', '.content'],
-        'detail_url_pattern': 'https://www.spglobal.com/.*',
-        'max_articles': 5
-    },
-    {
-        'name': 'Global Platts ESG',
-        'url': 'https://www.spglobal.com/commodityinsights/en/',
-        'type': 'scrape',
-        'keywords': ['energy', 'carbon', 'emissions', 'climate', 'ESG'],
-        'selectors': ['.article-content', 'article', 'main', '.content'],
-        'detail_url_pattern': 'https://www.spglobal.com/.*',
+        'selectors': ['.article-body', '.content', 'article', 'main'],
+        'detail_url_pattern': 'https://www.reuters.com/.*',
         'max_articles': 5
     }
 ]
@@ -153,11 +141,13 @@ USER_AGENTS = [
 
 # ===== 来源简称映射 =====
 SOURCE_SHORT_NAMES = {
-    '欧盟委员会气候': '欧盟',
-    '欧洲环境署 EEA': 'EEA',
-    '德勤ESG': '德勤',
-    'Reuters ESG': '路透',
     'Carbon Pulse': 'Carbon Pulse',
+    'EU Commission': '欧盟委员会',
+    'DG CLIMA': 'DG CLIMA',
+    'Carbon Brief': 'Carbon Brief',
+    'Sandbag': 'Sandbag',
+    'Windpower Monthly': 'Windpower',
+    'Energy Monitor': 'Energy Monitor',
     'Bloomberg ESG': '彭博',
     'Financial Times ESG': 'FT',
     'ICIS ESG': 'ICIS',
