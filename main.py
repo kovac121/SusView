@@ -35,6 +35,14 @@ except ImportError:
     AI_ENABLED = False
     print("⚠️ AI功能未启用 (ai_providers.py 未找到)")
 
+# 邮件发送功能
+try:
+    from email_sender import send_html_file
+    EMAIL_ENABLED = True
+except ImportError:
+    EMAIL_ENABLED = False
+    print("⚠️ 邮件功能未启用 (email_sender.py 未找到)")
+
 
 def fetch_source(source):
     """多进程抓取单个源
@@ -145,11 +153,11 @@ def parse_ai_translations(ai_content, news_list):
 
 
 def format_wechat_html(news_list, ai_model_name=None):
-    """生成适合微信的HTML格式"""
+    """生成适合微信的HTML格式（微信兼容的内联样式）"""
     if not news_list:
         return ""
 
-    # 生成新闻项HTML
+    # 生成新闻项HTML（微信兼容的内联样式）
     news_items = []
     for news in news_list[:8]:
         source = SOURCE_SHORT_NAMES.get(news['source'], news['source'])
@@ -160,42 +168,48 @@ def format_wechat_html(news_list, ai_model_name=None):
         link = news['link']
         published = news.get('published', '')[:16]
 
+        # 微信兼容HTML：无border-radius/box-shadow/rgba，用border做分割
         if title_cn:
-            item = f"""<div class="news-item">
-            <div class="news-header">
-                <span class="news-source">{source}</span>
-                <span class="news-time">{published}</span>
+            ai_summary_html = f'<div style="background:#e8f5e9;padding:10px 12px;border-left:3px solid #22c55e;font-size:14px;color:#333333;">{ai_summary}</div>' if ai_summary else ''
+
+            item = f'''
+        <div style="background:#ffffff;padding:16px;border-bottom:1px solid #e9ecef;">
+            <div style="margin-bottom:8px;">
+                <span style="background:#e8f5e9;color:#2e7d32;padding:3px 8px;font-size:11px;font-weight:600;">{source}</span>
+                <span style="font-size:12px;color:#666666;">{published}</span>
             </div>
-            <h3 class="news-title">{title_cn}</h3>
-            <p class="news-original-title">原文: {title}</p>
-            {'<p class="ai-summary-text">' + ai_summary + '</p>' if ai_summary else ''}
-            <a class="news-link" href="{link}">阅读原文</a>
-        </div>"""
+            <h3 style="margin:0;font-size:16px;font-weight:600;color:#1a1a1a;line-height:1.4;">{title_cn}</h3>
+            <div style="font-size:12px;color:#666666;">原文: {title}</div>
+            {ai_summary_html}
+            <a href="{link}" style="color:#15803d;font-size:13px;font-weight:500;">阅读原文 →</a>
+        </div>'''
         else:
-            item = f"""<div class="news-item">
-            <div class="news-header">
-                <span class="news-source">{source}</span>
-                <span class="news-time">{published}</span>
+            item = f'''
+        <div style="background:#ffffff;padding:16px;border-bottom:1px solid #e9ecef;">
+            <div style="margin-bottom:8px;">
+                <span style="background:#e8f5e9;color:#2e7d32;padding:3px 8px;font-size:11px;font-weight:600;">{source}</span>
+                <span style="font-size:12px;color:#666666;">{published}</span>
             </div>
-            <h3 class="news-title">{title}</h3>
-            <p class="news-summary">{summary}</p>
-            <a class="news-link" href="{link}">阅读原文</a>
-        </div>"""
+            <h3 style="margin:0;font-size:16px;font-weight:600;color:#1a1a1a;line-height:1.4;">{title}</h3>
+            <div style="font-size:14px;color:#666666;">{summary}</div>
+            <a href="{link}" style="color:#15803d;font-size:13px;font-weight:500;">阅读原文 →</a>
+        </div>'''
         news_items.append(item)
 
-    # AI区域
-    ai_section = ""
+    # AI区域 - 微信兼容
+    ai_summary_section = ""
     if ai_model_name:
-        ai_section = f"""<div class="ai-summary">
-            <span>AI翻译摘要</span>
-            <span class="ai-model">{ai_model_name}</span>
-        </div>"""
+        ai_summary_section = f'''
+    <div style="background:#e8f5e9;padding:12px 16px;border-bottom:1px solid #c8e6c9;font-size:13px;color:#2e7d32;">
+        <span>AI翻译摘要</span>
+        <span style="font-size:12px;color:#666666;">{ai_model_name}</span>
+    </div>'''
 
     # 读取模板并替换
     template = TEMPLATE_FILE.read_text(encoding='utf-8')
     html = template.replace('{{date_str}}', datetime.now().strftime('%Y年%m月%d日'))
     html = html.replace('{{count}}', str(len(news_list[:8])))
-    html = html.replace('{{ai_section}}', ai_section)
+    html = html.replace('{{ai_summary}}', ai_summary_section)
     html = html.replace('{{news_items}}', '\n'.join(news_items))
 
     return html
@@ -240,6 +254,14 @@ def main():
 
     # 保存到文件
     save_html(html_content)
+
+    # 发送邮件
+    if EMAIL_ENABLED:
+        print("\n📧 正在发送邮件...")
+        if send_html_file(str(OUTPUT_FILE)):
+            print("✅ 邮件发送成功!")
+        else:
+            print("⚠️ 邮件发送失败")
 
     print("=== 完成 ===")
 
