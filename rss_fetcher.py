@@ -25,7 +25,9 @@ def fetch_single_rss(source):
     try:
         feed = feedparser.parse(source['url'])
 
-        for entry in feed.entries[:MAX_ARTICLES_PER_SOURCE]:
+        # Carbon Pulse限制为4条，其他源10条
+        limit = 4 if source['name'] == 'Carbon Pulse' else 10
+        for entry in feed.entries[:limit]:
             title = entry.get('title', '')
             link = entry.get('link', '')
             summary = entry.get('summary', '') or entry.get('description', '')

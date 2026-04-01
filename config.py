@@ -126,8 +126,8 @@ ESG_PATTERN = re.compile('|'.join(re.escape(kw) for kw in ESG_KEYWORDS), re.IGNO
 # ===== 速率限制配置 =====
 MAX_REQUESTS_PER_MINUTE = 15
 MAX_WORKERS = 8  # 多进程并发数
-MAX_NEWS = 30  # 最多返回新闻数
-MAX_ARTICLES_PER_SOURCE = 10  # 每个源最多文章数
+MAX_NEWS = 10  # 最多返回新闻数
+MAX_ARTICLES_PER_SOURCE = 4  # 每个源最多文章数（Carbon Pulse限制为4条）
 
 # ===== User-Agent列表 =====
 USER_AGENTS = [

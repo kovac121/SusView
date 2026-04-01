@@ -159,7 +159,7 @@ def format_wechat_html(news_list, ai_model_name=None):
 
     # 生成新闻项HTML（微信兼容的内联样式）
     news_items = []
-    for news in news_list[:8]:
+    for news in news_list[:10]:
         source = SOURCE_SHORT_NAMES.get(news['source'], news['source'])
         title = news['title']
         title_cn = news.get('title_cn', '')
@@ -208,7 +208,7 @@ def format_wechat_html(news_list, ai_model_name=None):
     # 读取模板并替换
     template = TEMPLATE_FILE.read_text(encoding='utf-8')
     html = template.replace('{{date_str}}', datetime.now().strftime('%Y年%m月%d日'))
-    html = html.replace('{{count}}', str(len(news_list[:8])))
+    html = html.replace('{{count}}', str(len(news_list[:10])))
     html = html.replace('{{ai_summary}}', ai_summary_section)
     html = html.replace('{{news_items}}', '\n'.join(news_items))
 

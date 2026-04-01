@@ -13,8 +13,8 @@ from email.mime.multipart import MIMEMultipart
 from pathlib import Path
 from datetime import datetime
 
-# 解决Windows控制台编码问题
-if sys.platform == 'win32':
+# 解决Windows控制台编码问题（只在主模块中重定向，避免重复重定向）
+if __name__ == '__main__' and sys.platform == 'win32':
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
