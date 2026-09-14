@@ -6,11 +6,16 @@
 import re
 import time
 from datetime import datetime
-from scrapling import Fetcher
 
-from config import (
-    MEDIA_SOURCES, USER_AGENTS, MAX_ARTICLES_PER_SOURCE, is_esg_related
-)
+from config import MEDIA_SOURCES, USER_AGENTS, is_esg_related
+
+
+def _get_fetcher():
+    try:
+        from scrapling import Fetcher
+    except ImportError as exc:
+        raise ImportError('网页抓取需要安装 scrapling: pip install scrapling') from exc
+    return Fetcher
 
 
 class RateLimiter:
@@ -58,7 +63,7 @@ def fetch_page_content(url, selectors=None, max_retries=2):
 
             # 轮换User-Agent
             ua = USER_AGENTS[attempt % len(USER_AGENTS)]
-            session = Fetcher(default_headers={'User-Agent': ua})
+            session = _get_fetcher()(default_headers={'User-Agent': ua})
 
             response = session.get(url)
 
@@ -110,7 +115,7 @@ def scrape_single_media(source):
         print(f"抓取媒体源: {source['name']}")
 
         # 创建session
-        session = Fetcher(default_headers={'User-Agent': USER_AGENTS[0]})
+        session = _get_fetcher()(default_headers={'User-Agent': USER_AGENTS[0]})
 
         # 应用速率限制
         rate_limiter.wait_if_needed()

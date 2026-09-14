@@ -15,22 +15,24 @@ if sys.platform == 'win32':
 import os
 from datetime import datetime
 from concurrent.futures import ProcessPoolExecutor, as_completed
-from multiprocessing import cpu_count
 
-# 导入配置
+# 导入配置（会加载 .env）
 from config import (
     MAX_WORKERS, MAX_NEWS, SOURCE_SHORT_NAMES,
-    TEMPLATE_FILE, OUTPUT_FILE, is_esg_related
+    TEMPLATE_FILE, OUTPUT_FILE
 )
 
 # 导入抓取模块
 import rss_fetcher
-import web_scraper
 
 # AI 摘要功能
 try:
     from ai_providers import get_ai_summary, get_model_name
-    AI_ENABLED = True
+    from ai_config import AI_CONFIG
+    _provider = AI_CONFIG.get('provider', 'anthropic')
+    AI_ENABLED = bool(AI_CONFIG.get(_provider, {}).get('api_key'))
+    if not AI_ENABLED:
+        print("⚠️ 未配置 LONGCAT_API_KEY，跳过 AI 翻译")
 except ImportError:
     AI_ENABLED = False
     print("⚠️ AI功能未启用 (ai_providers.py 未找到)")
@@ -55,8 +57,8 @@ def fetch_source(source):
     """
     if source['type'] == 'rss':
         return rss_fetcher.fetch_single_rss(source)
-    else:
-        return web_scraper.scrape_single_media(source)
+    import web_scraper
+    return web_scraper.scrape_single_media(source)
 
 
 def fetch_all_news():

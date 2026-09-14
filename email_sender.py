@@ -13,6 +13,12 @@ from email.mime.multipart import MIMEMultipart
 from pathlib import Path
 from datetime import datetime
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv(Path(__file__).parent / '.env')
+except ImportError:
+    pass
+
 # 解决Windows控制台编码问题（只在主模块中重定向，避免重复重定向）
 if __name__ == '__main__' and sys.platform == 'win32':
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
@@ -21,9 +27,9 @@ if __name__ == '__main__' and sys.platform == 'win32':
 # 163邮箱配置（从环境变量读取）
 SMTP_SERVER = os.getenv('SMTP_SERVER', 'smtp.163.com')
 SMTP_PORT = int(os.getenv('SMTP_PORT', '465'))
-SENDER_EMAIL = os.getenv('SENDER_EMAIL', 'kovac121@163.com')
+SENDER_EMAIL = os.getenv('SENDER_EMAIL', '')
 SENDER_PASSWORD = os.getenv('SENDER_PASSWORD', '')
-RECIPIENTS = os.getenv('RECIPIENTS', 'kovac121@163.com').split(',')
+RECIPIENTS = [item.strip() for item in os.getenv('RECIPIENTS', '').split(',') if item.strip()]
 
 
 def send_html_email(html_content: str, subject: str = None, recipients: list = None) -> bool:
@@ -34,8 +40,11 @@ def send_html_email(html_content: str, subject: str = None, recipients: list = N
     if recipients is None:
         recipients = RECIPIENTS
 
-    if not SENDER_PASSWORD:
-        print("⚠️ 邮件功能未配置 SENDER_PASSWORD 环境变量")
+    if not SENDER_EMAIL or not SENDER_PASSWORD:
+        print("⚠️ 邮件功能未配置 SENDER_EMAIL / SENDER_PASSWORD")
+        return False
+    if not recipients:
+        print("⚠️ 邮件功能未配置 RECIPIENTS")
         return False
 
     try:
@@ -70,8 +79,11 @@ def send_html_file(html_file_path: str, subject: str = None, recipients: list = 
     if recipients is None:
         recipients = RECIPIENTS
 
-    if not SENDER_PASSWORD:
-        print("⚠️ 邮件功能未配置 SENDER_PASSWORD 环境变量")
+    if not SENDER_EMAIL or not SENDER_PASSWORD:
+        print("⚠️ 邮件功能未配置 SENDER_EMAIL / SENDER_PASSWORD")
+        return False
+    if not recipients:
+        print("⚠️ 邮件功能未配置 RECIPIENTS")
         return False
 
     try:

@@ -75,7 +75,7 @@ def get_model_name():
     config = AI_CONFIG.get(provider, {})
 
     model_names = {
-        'anthropic': 'Claude',
+        'anthropic': 'LongCat',
         'custom': 'Custom'
     }
 
@@ -115,7 +115,11 @@ def build_news_content(news_list, max_news=5):
 def call_anthropic(content):
     """调用 Anthropic Claude API (使用requests直接调用，支持自定义端点如LongCat)"""
     config = AI_CONFIG.get('anthropic', {})
-    api_key = config.get('api_key') or os.environ.get('ANTHROPIC_API_KEY')
+    api_key = (
+        config.get('api_key')
+        or os.environ.get('LONGCAT_API_KEY')
+        or os.environ.get('ANTHROPIC_API_KEY')
+    )
     model = config.get('model', 'claude-3-haiku-20240307')
     api_base = config.get('api_base')  # 支持自定义端点
 

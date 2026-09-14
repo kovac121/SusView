@@ -32,13 +32,14 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: |
-          pip install feedparser python-dateutil scrapling browserforge curl-cffi playwright
-          playwright install chromium
+        run: pip install -r requirements.txt
 
       - name: Run ESG News Fetcher (main.py)
         env:
           LONGCAT_API_KEY: ${{ secrets.LONGCAT_API_KEY }}
+          AI_PROVIDER: anthropic
+          AI_MODEL: LongCat-Flash-Chat
+          AI_API_BASE: https://api.longcat.chat/anthropic
           SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
           SENDER_PASSWORD: ${{ secrets.SENDER_PASSWORD }}
           RECIPIENTS: ${{ secrets.RECIPIENTS }}
